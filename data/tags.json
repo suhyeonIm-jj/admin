@@ -1,0 +1,14 @@
+[
+  { "id": "tag-1", "name": "개발", "color": "#3b82f6" },
+  { "id": "tag-2", "name": "깃", "color": "#1f2937" },
+  { "id": "tag-3", "name": "생산성", "color": "#10b981" },
+  { "id": "tag-4", "name": "문서", "color": "#6366f1" },
+  { "id": "tag-5", "name": "소통", "color": "#8b5cf6" },
+  { "id": "tag-6", "name": "디자인", "color": "#f59e0b" },
+  { "id": "tag-7", "name": "협업", "color": "#14b8a6" },
+  { "id": "tag-8", "name": "엔터", "color": "#ef4444" },
+  { "id": "tag-9", "name": "스트리밍", "color": "#dc2626" },
+  { "id": "tag-10", "name": "학습", "color": "#0ea5e9" },
+  { "id": "tag-11", "name": "배포", "color": "#000000" },
+  { "id": "tag-12", "name": "쇼핑", "color": "#ec4899" }
+]

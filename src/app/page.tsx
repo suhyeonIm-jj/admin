@@ -1,65 +1,407 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { Link, Category, Tag } from "@/types";
+import Sidebar from "@/components/Sidebar";
+import Topbar from "@/components/Topbar";
+import LinkCard from "@/components/LinkCard";
+import CommandPalette from "@/components/CommandPalette";
+import LinkModal from "@/components/LinkModal";
+
+type ViewMode = "card" | "list" | "compact";
+type SortBy = "recent" | "name" | "visits" | "added";
+
+interface UserInfo {
+  id: string;
+  email: string;
+  name: string;
+}
+
+export default function HomePage() {
+  const router = useRouter();
+  const [user, setUser] = useState<UserInfo | null>(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+
+  const [workspace, setWorkspace] = useState<"work" | "personal">("work");
+  const [activeCategory, setActiveCategory] = useState("all");
+  const [view, setView] = useState<ViewMode>("card");
+  const [sortBy, setSortBy] = useState<SortBy>("recent");
+  const [isCommandOpen, setIsCommandOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingLink, setEditingLink] = useState<Link | null>(null);
+
+  const [links, setLinks] = useState<Link[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Check authentication
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const res = await fetch("/api/auth/me");
+        const data = await res.json();
+        if (data.user) {
+          setUser(data.user);
+        } else {
+          router.push("/login");
+        }
+      } catch {
+        router.push("/login");
+      } finally {
+        setIsAuthLoading(false);
+      }
+    };
+    checkAuth();
+  }, [router]);
+
+  const fetchData = useCallback(async () => {
+    try {
+      const [linksRes, categoriesRes, tagsRes] = await Promise.all([
+        fetch(`/api/links?type=${workspace}`),
+        fetch(`/api/categories?type=${workspace}`),
+        fetch("/api/tags"),
+      ]);
+
+      const [linksData, categoriesData, tagsData] = await Promise.all([
+        linksRes.json(),
+        categoriesRes.json(),
+        tagsRes.json(),
+      ]);
+
+      setLinks(linksData);
+      setCategories(categoriesData);
+      setTags(tagsData);
+    } catch (error) {
+      console.error("Failed to fetch data:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [workspace]);
+
+  useEffect(() => {
+    if (user) {
+      fetchData();
+    }
+  }, [fetchData, user]);
+
+  // Keyboard shortcut for command palette
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setIsCommandOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+      router.push("/login");
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
+
+  // Filter links based on active category
+  const filteredLinks = links.filter((link) => {
+    if (activeCategory === "all") return true;
+    if (activeCategory === "pinned") return link.isFavorite || link.isPinned;
+    if (activeCategory === "recent") return true;
+    return link.category === activeCategory;
+  });
+
+  // Sort links
+  const sortedLinks = [...filteredLinks].sort((a, b) => {
+    switch (sortBy) {
+      case "recent":
+        return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+      case "name":
+        return a.title.localeCompare(b.title);
+      case "visits":
+        return b.usageCount - a.usageCount;
+      case "added":
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      default:
+        return 0;
+    }
+  });
+
+  // If recent category, limit to recent 10
+  const displayLinks =
+    activeCategory === "recent" ? sortedLinks.slice(0, 10) : sortedLinks;
+
+  // Count calculations
+  const workLinks = links.filter((l) => !l.category.startsWith("personal"));
+  const personalLinks = links.filter((l) => l.category.startsWith("personal"));
+  const counts = {
+    work: workLinks.length,
+    personal: personalLinks.length,
+    total: links.length,
+    pinned: links.filter((l) => l.isFavorite || l.isPinned).length,
+    recent: Math.min(links.length, 10),
+  };
+
+  // Categories with counts
+  const categoriesWithCounts = categories.map((cat) => ({
+    ...cat,
+    count: links.filter((l) => l.category === cat.id).length,
+  }));
+
+  // Unique tags from links
+  const uniqueTags = [...new Set(links.flatMap((l) => l.tags))];
+
+  const handleToggleFavorite = async (id: string, isFavorite: boolean) => {
+    try {
+      await fetch(`/api/links/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isFavorite }),
+      });
+      fetchData();
+    } catch (error) {
+      console.error("Failed to toggle favorite:", error);
+    }
+  };
+
+  const handleSaveLink = async (data: Partial<Link>) => {
+    try {
+      if (editingLink) {
+        await fetch(`/api/links/${editingLink.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        });
+      } else {
+        await fetch("/api/links", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        });
+      }
+      fetchData();
+      setEditingLink(null);
+    } catch (error) {
+      console.error("Failed to save link:", error);
+    }
+  };
+
+  const getCategoryForLink = (link: Link) => {
+    return categories.find((c) => c.id === link.category);
+  };
+
+  // Get section title based on active category
+  const getSectionTitle = () => {
+    if (activeCategory === "all") return "전체 링크";
+    if (activeCategory === "pinned") return "즐겨찾기";
+    if (activeCategory === "recent") return "최근 방문";
+    const cat = categories.find((c) => c.id === activeCategory);
+    return cat?.name || "링크";
+  };
+
+  // Show loading while checking auth
+  if (isAuthLoading) {
+    return (
+      <div className="auth-page">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--accent)]" />
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <div className="app-shell">
+      <Sidebar
+        workspace={workspace}
+        setWorkspace={setWorkspace}
+        activeCategory={activeCategory}
+        setActiveCategory={setActiveCategory}
+        categories={categoriesWithCounts}
+        counts={counts}
+        tags={uniqueTags}
+        user={user}
+        onLogout={handleLogout}
+      />
+
+      <main className="main">
+        <Topbar
+          workspace={workspace}
+          view={view}
+          setView={setView}
+          sortBy={sortBy}
+          setSortBy={setSortBy}
+          onAdd={() => {
+            setEditingLink(null);
+            setIsModalOpen(true);
+          }}
+          onOpenCommand={() => setIsCommandOpen(true)}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        <div className="content">
+          {isLoading ? (
+            <div className="flex items-center justify-center h-64">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--accent)]" />
+            </div>
+          ) : (
+            <>
+              {/* Stats Strip */}
+              <div className="stats-strip">
+                <div className="stat">
+                  <div className="stat-label">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                      <rect x="1" y="1" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.2"/>
+                      <rect x="7" y="1" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.2"/>
+                      <rect x="1" y="7" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.2"/>
+                      <rect x="7" y="7" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.2"/>
+                    </svg>
+                    전체 링크
+                  </div>
+                  <div className="stat-val">{counts.total}</div>
+                </div>
+                <div className="stat">
+                  <div className="stat-label">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                      <path d="M6 1l1.5 3 3.3.4-2.4 2.3.6 3.3L6 8.5 3 10l.6-3.3L1.2 4.4l3.3-.4L6 1z" stroke="currentColor" strokeWidth="1.1" strokeLinejoin="round"/>
+                    </svg>
+                    즐겨찾기
+                  </div>
+                  <div className="stat-val">{counts.pinned}</div>
+                </div>
+                <div className="stat">
+                  <div className="stat-label">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                      <circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1.2"/>
+                      <path d="M6 3.5v2.5l1.5 1" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+                    </svg>
+                    이번 주 방문
+                  </div>
+                  <div className="stat-val">
+                    {links.reduce((sum, l) => sum + l.usageCount, 0)}
+                  </div>
+                </div>
+                <div className="stat">
+                  <div className="stat-label">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                      <path d="M2 3h8M2 6h8M2 9h5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+                    </svg>
+                    카테고리
+                  </div>
+                  <div className="stat-val">{categories.length}</div>
+                </div>
+              </div>
+
+              {/* Section */}
+              <div className="section">
+                <div className="section-header">
+                  <div className="section-title">
+                    {activeCategory === "pinned" && (
+                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="pin-icon">
+                        <path d="M7 1.5l1.7 3.55 3.9.48-2.88 2.68.74 3.85L7 10.24 3.54 12.06l.74-3.85L1.4 5.53l3.9-.48L7 1.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/>
+                      </svg>
+                    )}
+                    {getSectionTitle()}
+                    <span className="count">{displayLinks.length}</span>
+                  </div>
+                </div>
+
+                {view === "card" && (
+                  <div className="grid">
+                    {displayLinks.map((link) => (
+                      <LinkCard
+                        key={link.id}
+                        link={link}
+                        view="card"
+                        category={getCategoryForLink(link)}
+                        onToggleFavorite={handleToggleFavorite}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                {view === "list" && (
+                  <div className="list">
+                    <div className="list-header">
+                      <span></span>
+                      <span></span>
+                      <span>제목</span>
+                      <span>태그</span>
+                      <span>카테고리</span>
+                      <span></span>
+                    </div>
+                    {displayLinks.map((link) => (
+                      <LinkCard
+                        key={link.id}
+                        link={link}
+                        view="list"
+                        category={getCategoryForLink(link)}
+                        onToggleFavorite={handleToggleFavorite}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                {view === "compact" && (
+                  <div className="compact-grid">
+                    {displayLinks.map((link) => (
+                      <LinkCard
+                        key={link.id}
+                        link={link}
+                        view="compact"
+                        category={getCategoryForLink(link)}
+                        onToggleFavorite={handleToggleFavorite}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                {displayLinks.length === 0 && (
+                  <div className="text-center py-12">
+                    <p className="text-[var(--fg-muted)]">
+                      {activeCategory === "pinned"
+                        ? "즐겨찾기한 링크가 없습니다."
+                        : "링크가 없습니다."}
+                    </p>
+                    <button
+                      onClick={() => {
+                        setEditingLink(null);
+                        setIsModalOpen(true);
+                      }}
+                      className="mt-4 text-[var(--accent)] hover:underline"
+                    >
+                      첫 번째 링크 추가하기
+                    </button>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </main>
+
+      {/* Command Palette */}
+      <CommandPalette
+        open={isCommandOpen}
+        onClose={() => setIsCommandOpen(false)}
+        links={links}
+        categories={categories}
+      />
+
+      {/* Add/Edit Modal */}
+      <LinkModal
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingLink(null);
+        }}
+        onSave={handleSaveLink}
+        link={editingLink}
+        categories={categories}
+        tags={tags}
+        defaultCategory={categories[0]?.id}
+      />
     </div>
   );
 }

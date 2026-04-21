@@ -1,0 +1,9 @@
+[
+  {
+    "id": "user-1",
+    "email": "admin@damin.hub",
+    "password": "admin123",
+    "name": "관리자",
+    "createdAt": "2024-01-01T00:00:00Z"
+  }
+]
