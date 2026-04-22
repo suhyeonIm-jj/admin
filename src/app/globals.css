@@ -621,6 +621,11 @@ kbd {
 }
 .favicon-letter { line-height: 1; }
 
+.card-actions {
+  display: flex;
+  gap: 2px;
+}
+
 .pin-btn {
   width: 22px; height: 22px;
   display: grid; place-items: center;
@@ -634,6 +639,24 @@ kbd {
 .pin-btn.pinned {
   opacity: 1;
   color: var(--favorite);
+}
+
+.delete-btn {
+  width: 22px; height: 22px;
+  display: grid; place-items: center;
+  color: var(--fg-faint);
+  border-radius: 4px;
+  opacity: 0;
+  transition: all 0.12s;
+}
+.link-card:hover .delete-btn { opacity: 1; }
+.link-row:hover .delete-btn { opacity: 1; }
+.link-compact:hover .delete-btn { opacity: 1; }
+.delete-btn:hover { background: #fee2e2; color: #dc2626; }
+
+.delete-btn.compact {
+  margin-left: auto;
+  opacity: 0;
 }
 
 .card-body { flex: 1; min-width: 0; }

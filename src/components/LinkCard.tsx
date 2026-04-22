@@ -74,16 +74,26 @@ function getDisplayUrl(url: string): string {
   }
 }
 
+function DeleteIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2 4h10M5 4V3a1 1 0 011-1h2a1 1 0 011 1v1M11 4v7a1 1 0 01-1 1H4a1 1 0 01-1-1V4M6 7v3M8 7v3" />
+    </svg>
+  );
+}
+
 // Card View Component
 function LinkCardView({
   link,
   category,
   onTogglePin,
+  onDelete,
   onClick,
 }: {
   link: Link;
   category?: Category;
   onTogglePin?: (id: string, isPinned: boolean) => void;
+  onDelete?: (id: string) => void;
   onClick?: () => void;
 }) {
   const handleClick = () => {
@@ -95,16 +105,30 @@ function LinkCardView({
     <div className="link-card" onClick={handleClick}>
       <div className="card-top">
         <Favicon link={link} />
-        <button
-          className={`pin-btn ${link.isFavorite ? "pinned" : ""}`}
-          onClick={(e) => {
-            e.stopPropagation();
-            onTogglePin?.(link.id, !link.isFavorite);
-          }}
-          title={link.isFavorite ? "즐겨찾기 해제" : "즐겨찾기"}
-        >
-          <StarIcon filled={link.isFavorite} />
-        </button>
+        <div className="card-actions">
+          <button
+            className="delete-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (confirm("이 링크를 삭제하시겠습니까?")) {
+                onDelete?.(link.id);
+              }
+            }}
+            title="삭제"
+          >
+            <DeleteIcon />
+          </button>
+          <button
+            className={`pin-btn ${link.isFavorite ? "pinned" : ""}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              onTogglePin?.(link.id, !link.isFavorite);
+            }}
+            title={link.isFavorite ? "즐겨찾기 해제" : "즐겨찾기"}
+          >
+            <StarIcon filled={link.isFavorite} />
+          </button>
+        </div>
       </div>
       <div className="card-body">
         <div className="card-title">{link.title}</div>
@@ -134,11 +158,13 @@ function LinkRowView({
   link,
   category,
   onTogglePin,
+  onDelete,
   onClick,
 }: {
   link: Link;
   category?: Category;
   onTogglePin?: (id: string, isPinned: boolean) => void;
+  onDelete?: (id: string) => void;
   onClick?: () => void;
 }) {
   const handleClick = () => {
@@ -178,15 +204,18 @@ function LinkRowView({
         )}
       </div>
       <div className="row-actions">
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-          <path
-            d="M5 3l4 4-4 4"
-            stroke="currentColor"
-            strokeWidth="1.3"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
+        <button
+          className="delete-btn"
+          onClick={(e) => {
+            e.stopPropagation();
+            if (confirm("이 링크를 삭제하시겠습니까?")) {
+              onDelete?.(link.id);
+            }
+          }}
+          title="삭제"
+        >
+          <DeleteIcon />
+        </button>
       </div>
     </div>
   );
@@ -195,9 +224,11 @@ function LinkRowView({
 // Compact View Component
 function LinkCompactView({
   link,
+  onDelete,
   onClick,
 }: {
   link: Link;
+  onDelete?: (id: string) => void;
   onClick?: () => void;
 }) {
   const handleClick = () => {
@@ -210,6 +241,18 @@ function LinkCompactView({
       <Favicon link={link} />
       <div className="compact-title">{link.title}</div>
       <div className="compact-url">{getDisplayUrl(link.url)}</div>
+      <button
+        className="delete-btn compact"
+        onClick={(e) => {
+          e.stopPropagation();
+          if (confirm("이 링크를 삭제하시겠습니까?")) {
+            onDelete?.(link.id);
+          }
+        }}
+        title="삭제"
+      >
+        <DeleteIcon />
+      </button>
     </div>
   );
 }
@@ -247,13 +290,14 @@ export default function LinkCard({
         link={link}
         category={category}
         onTogglePin={handleTogglePin}
+        onDelete={onDelete}
         onClick={handleClick}
       />
     );
   }
 
   if (view === "compact") {
-    return <LinkCompactView link={link} onClick={handleClick} />;
+    return <LinkCompactView link={link} onDelete={onDelete} onClick={handleClick} />;
   }
 
   return (
@@ -261,6 +305,7 @@ export default function LinkCard({
       link={link}
       category={category}
       onTogglePin={handleTogglePin}
+      onDelete={onDelete}
       onClick={handleClick}
     />
   );

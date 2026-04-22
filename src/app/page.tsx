@@ -168,6 +168,17 @@ export default function HomePage() {
     }
   };
 
+  const handleDeleteLink = async (id: string) => {
+    try {
+      await fetch(`/api/links/${id}`, {
+        method: "DELETE",
+      });
+      fetchData();
+    } catch (error) {
+      console.error("Failed to delete link:", error);
+    }
+  };
+
   const handleSaveLink = async (data: Partial<Link>) => {
     try {
       if (editingLink) {
@@ -247,52 +258,6 @@ export default function HomePage() {
             </div>
           ) : (
             <>
-              {/* Stats Strip */}
-              <div className="stats-strip">
-                <div className="stat">
-                  <div className="stat-label">
-                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                      <rect x="1" y="1" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.2"/>
-                      <rect x="7" y="1" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.2"/>
-                      <rect x="1" y="7" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.2"/>
-                      <rect x="7" y="7" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.2"/>
-                    </svg>
-                    전체 링크
-                  </div>
-                  <div className="stat-val">{counts.total}</div>
-                </div>
-                <div className="stat">
-                  <div className="stat-label">
-                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                      <path d="M6 1l1.5 3 3.3.4-2.4 2.3.6 3.3L6 8.5 3 10l.6-3.3L1.2 4.4l3.3-.4L6 1z" stroke="currentColor" strokeWidth="1.1" strokeLinejoin="round"/>
-                    </svg>
-                    즐겨찾기
-                  </div>
-                  <div className="stat-val">{counts.pinned}</div>
-                </div>
-                <div className="stat">
-                  <div className="stat-label">
-                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                      <circle cx="6" cy="6" r="4.5" stroke="currentColor" strokeWidth="1.2"/>
-                      <path d="M6 3.5v2.5l1.5 1" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-                    </svg>
-                    이번 주 방문
-                  </div>
-                  <div className="stat-val">
-                    {links.reduce((sum, l) => sum + l.usageCount, 0)}
-                  </div>
-                </div>
-                <div className="stat">
-                  <div className="stat-label">
-                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                      <path d="M2 3h8M2 6h8M2 9h5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-                    </svg>
-                    카테고리
-                  </div>
-                  <div className="stat-val">{categories.length}</div>
-                </div>
-              </div>
-
               {/* Section */}
               <div className="section">
                 <div className="section-header">
@@ -316,6 +281,7 @@ export default function HomePage() {
                         view="card"
                         category={getCategoryForLink(link)}
                         onToggleFavorite={handleToggleFavorite}
+                        onDelete={handleDeleteLink}
                       />
                     ))}
                   </div>
@@ -338,6 +304,7 @@ export default function HomePage() {
                         view="list"
                         category={getCategoryForLink(link)}
                         onToggleFavorite={handleToggleFavorite}
+                        onDelete={handleDeleteLink}
                       />
                     ))}
                   </div>
@@ -352,6 +319,7 @@ export default function HomePage() {
                         view="compact"
                         category={getCategoryForLink(link)}
                         onToggleFavorite={handleToggleFavorite}
+                        onDelete={handleDeleteLink}
                       />
                     ))}
                   </div>

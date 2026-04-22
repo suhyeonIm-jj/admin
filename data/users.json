@@ -5,5 +5,12 @@
     "password": "admin123",
     "name": "관리자",
     "createdAt": "2024-01-01T00:00:00Z"
+  },
+  {
+    "id": "f3aef259-58b7-43f7-ac27-f90d6c256081",
+    "email": "seanimjj@gmail.com",
+    "password": "123456",
+    "name": "shinemuscat",
+    "createdAt": "2026-04-21T14:26:27.573Z"
   }
 ]

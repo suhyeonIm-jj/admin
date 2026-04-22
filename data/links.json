@@ -6,7 +6,10 @@
     "favicon": "https://github.githubassets.com/favicons/favicon.svg",
     "description": "코드 저장소 및 협업 플랫폼",
     "memo": "개인 프로젝트 및 오픈소스 기여",
-    "tags": ["개발", "깃"],
+    "tags": [
+      "개발",
+      "깃"
+    ],
     "category": "cat-dev",
     "isPinned": true,
     "isFavorite": false,
@@ -22,7 +25,10 @@
     "favicon": "https://www.notion.so/images/favicon.ico",
     "description": "문서 및 프로젝트 관리",
     "memo": "팀 위키 및 개인 노트",
-    "tags": ["생산성", "문서"],
+    "tags": [
+      "생산성",
+      "문서"
+    ],
     "category": "cat-productivity",
     "isPinned": true,
     "isFavorite": false,
@@ -38,7 +44,9 @@
     "favicon": "https://a.slack-edge.com/80588/marketing/img/meta/favicon-32.png",
     "description": "팀 커뮤니케이션",
     "memo": "",
-    "tags": ["소통"],
+    "tags": [
+      "소통"
+    ],
     "category": "cat-communication",
     "isPinned": false,
     "isFavorite": false,
@@ -54,7 +62,10 @@
     "favicon": "https://static.figma.com/app/icon/1/favicon.png",
     "description": "디자인 협업 툴",
     "memo": "UI/UX 디자인 작업",
-    "tags": ["디자인", "협업"],
+    "tags": [
+      "디자인",
+      "협업"
+    ],
     "category": "cat-design",
     "isPinned": false,
     "isFavorite": false,
@@ -70,7 +81,10 @@
     "favicon": "https://assets.nflxext.com/ffe/siteui/common/icons/nficon2016.ico",
     "description": "스트리밍 서비스",
     "memo": "주말 영화 감상",
-    "tags": ["엔터", "스트리밍"],
+    "tags": [
+      "엔터",
+      "스트리밍"
+    ],
     "category": "cat-entertainment",
     "isPinned": false,
     "isFavorite": true,
@@ -86,7 +100,10 @@
     "favicon": "https://www.youtube.com/s/desktop/favicon.ico",
     "description": "동영상 플랫폼",
     "memo": "기술 강의 및 음악",
-    "tags": ["엔터", "학습"],
+    "tags": [
+      "엔터",
+      "학습"
+    ],
     "category": "cat-entertainment",
     "isPinned": false,
     "isFavorite": true,
@@ -102,14 +119,17 @@
     "favicon": "https://vercel.com/favicon.ico",
     "description": "배포 플랫폼",
     "memo": "Next.js 프로젝트 배포",
-    "tags": ["개발", "배포"],
+    "tags": [
+      "개발",
+      "배포"
+    ],
     "category": "cat-dev",
     "isPinned": false,
     "isFavorite": false,
-    "usageCount": 60,
+    "usageCount": 61,
     "order": 4,
     "createdAt": "2024-01-07T00:00:00Z",
-    "updatedAt": "2024-01-07T00:00:00Z"
+    "updatedAt": "2026-04-21T14:27:32.532Z"
   },
   {
     "id": "link-8",
@@ -118,7 +138,9 @@
     "favicon": "https://www.amazon.com/favicon.ico",
     "description": "쇼핑",
     "memo": "",
-    "tags": ["쇼핑"],
+    "tags": [
+      "쇼핑"
+    ],
     "category": "cat-shopping",
     "isPinned": false,
     "isFavorite": false,
