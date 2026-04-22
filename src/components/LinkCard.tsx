@@ -82,17 +82,28 @@ function DeleteIcon() {
   );
 }
 
+function EditIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M10 2l2 2-7 7H3v-2l7-7z" />
+      <path d="M8.5 3.5l2 2" />
+    </svg>
+  );
+}
+
 // Card View Component
 function LinkCardView({
   link,
   category,
   onTogglePin,
+  onEdit,
   onDelete,
   onClick,
 }: {
   link: Link;
   category?: Category;
   onTogglePin?: (id: string, isPinned: boolean) => void;
+  onEdit?: (link: Link) => void;
   onDelete?: (id: string) => void;
   onClick?: () => void;
 }) {
@@ -106,6 +117,16 @@ function LinkCardView({
       <div className="card-top">
         <Favicon link={link} />
         <div className="card-actions">
+          <button
+            className="edit-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit?.(link);
+            }}
+            title="수정"
+          >
+            <EditIcon />
+          </button>
           <button
             className="delete-btn"
             onClick={(e) => {
@@ -158,12 +179,14 @@ function LinkRowView({
   link,
   category,
   onTogglePin,
+  onEdit,
   onDelete,
   onClick,
 }: {
   link: Link;
   category?: Category;
   onTogglePin?: (id: string, isPinned: boolean) => void;
+  onEdit?: (link: Link) => void;
   onDelete?: (id: string) => void;
   onClick?: () => void;
 }) {
@@ -205,6 +228,16 @@ function LinkRowView({
       </div>
       <div className="row-actions">
         <button
+          className="edit-btn"
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit?.(link);
+          }}
+          title="수정"
+        >
+          <EditIcon />
+        </button>
+        <button
           className="delete-btn"
           onClick={(e) => {
             e.stopPropagation();
@@ -224,10 +257,12 @@ function LinkRowView({
 // Compact View Component
 function LinkCompactView({
   link,
+  onEdit,
   onDelete,
   onClick,
 }: {
   link: Link;
+  onEdit?: (link: Link) => void;
   onDelete?: (id: string) => void;
   onClick?: () => void;
 }) {
@@ -241,18 +276,30 @@ function LinkCompactView({
       <Favicon link={link} />
       <div className="compact-title">{link.title}</div>
       <div className="compact-url">{getDisplayUrl(link.url)}</div>
-      <button
-        className="delete-btn compact"
-        onClick={(e) => {
-          e.stopPropagation();
-          if (confirm("이 링크를 삭제하시겠습니까?")) {
-            onDelete?.(link.id);
-          }
-        }}
-        title="삭제"
-      >
-        <DeleteIcon />
-      </button>
+      <div className="compact-actions">
+        <button
+          className="edit-btn compact"
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit?.(link);
+          }}
+          title="수정"
+        >
+          <EditIcon />
+        </button>
+        <button
+          className="delete-btn compact"
+          onClick={(e) => {
+            e.stopPropagation();
+            if (confirm("이 링크를 삭제하시겠습니까?")) {
+              onDelete?.(link.id);
+            }
+          }}
+          title="삭제"
+        >
+          <DeleteIcon />
+        </button>
+      </div>
     </div>
   );
 }
@@ -290,6 +337,7 @@ export default function LinkCard({
         link={link}
         category={category}
         onTogglePin={handleTogglePin}
+        onEdit={onEdit}
         onDelete={onDelete}
         onClick={handleClick}
       />
@@ -297,7 +345,7 @@ export default function LinkCard({
   }
 
   if (view === "compact") {
-    return <LinkCompactView link={link} onDelete={onDelete} onClick={handleClick} />;
+    return <LinkCompactView link={link} onEdit={onEdit} onDelete={onDelete} onClick={handleClick} />;
   }
 
   return (
@@ -305,6 +353,7 @@ export default function LinkCard({
       link={link}
       category={category}
       onTogglePin={handleTogglePin}
+      onEdit={onEdit}
       onDelete={onDelete}
       onClick={handleClick}
     />

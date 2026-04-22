@@ -641,6 +641,23 @@ kbd {
   color: var(--favorite);
 }
 
+.edit-btn {
+  width: 22px; height: 22px;
+  display: grid; place-items: center;
+  color: var(--fg-faint);
+  border-radius: 4px;
+  opacity: 0;
+  transition: all 0.12s;
+}
+.link-card:hover .edit-btn { opacity: 1; }
+.link-row:hover .edit-btn { opacity: 1; }
+.link-compact:hover .edit-btn { opacity: 1; }
+.edit-btn:hover { background: var(--accent-soft); color: var(--accent); }
+
+.edit-btn.compact {
+  opacity: 0;
+}
+
 .delete-btn {
   width: 22px; height: 22px;
   display: grid; place-items: center;
@@ -655,8 +672,13 @@ kbd {
 .delete-btn:hover { background: #fee2e2; color: #dc2626; }
 
 .delete-btn.compact {
-  margin-left: auto;
   opacity: 0;
+}
+
+.compact-actions {
+  display: flex;
+  gap: 2px;
+  margin-left: auto;
 }
 
 .card-body { flex: 1; min-width: 0; }
@@ -794,6 +816,8 @@ kbd {
 }
 
 .row-actions {
+  display: flex;
+  gap: 2px;
   color: var(--fg-faint);
 }
 

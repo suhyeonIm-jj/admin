@@ -113,25 +113,6 @@
     "updatedAt": "2024-01-06T00:00:00Z"
   },
   {
-    "id": "link-7",
-    "title": "Vercel",
-    "url": "https://vercel.com",
-    "favicon": "https://vercel.com/favicon.ico",
-    "description": "배포 플랫폼",
-    "memo": "Next.js 프로젝트 배포",
-    "tags": [
-      "개발",
-      "배포"
-    ],
-    "category": "cat-dev",
-    "isPinned": false,
-    "isFavorite": false,
-    "usageCount": 61,
-    "order": 4,
-    "createdAt": "2024-01-07T00:00:00Z",
-    "updatedAt": "2026-04-21T14:27:32.532Z"
-  },
-  {
     "id": "link-8",
     "title": "Amazon",
     "url": "https://amazon.com",

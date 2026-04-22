@@ -179,6 +179,11 @@ export default function HomePage() {
     }
   };
 
+  const handleEditLink = (link: Link) => {
+    setEditingLink(link);
+    setIsModalOpen(true);
+  };
+
   const handleSaveLink = async (data: Partial<Link>) => {
     try {
       if (editingLink) {
@@ -281,6 +286,7 @@ export default function HomePage() {
                         view="card"
                         category={getCategoryForLink(link)}
                         onToggleFavorite={handleToggleFavorite}
+                        onEdit={handleEditLink}
                         onDelete={handleDeleteLink}
                       />
                     ))}
@@ -304,6 +310,7 @@ export default function HomePage() {
                         view="list"
                         category={getCategoryForLink(link)}
                         onToggleFavorite={handleToggleFavorite}
+                        onEdit={handleEditLink}
                         onDelete={handleDeleteLink}
                       />
                     ))}
@@ -319,6 +326,7 @@ export default function HomePage() {
                         view="compact"
                         category={getCategoryForLink(link)}
                         onToggleFavorite={handleToggleFavorite}
+                        onEdit={handleEditLink}
                         onDelete={handleDeleteLink}
                       />
                     ))}
