@@ -104,44 +104,37 @@ export default function LinkModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div
-        className="absolute inset-0 bg-black/50"
-        onClick={onClose}
-      />
-      <div className="relative bg-[var(--card-bg)] rounded-xl shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-4 border-b border-[var(--card-border)]">
-          <h2 className="text-lg font-semibold">
-            {link ? "Edit Link" : "Add Link"}
+    <div className="modal-overlay">
+      <div className="modal-backdrop" onClick={onClose} />
+      <div className="modal-content">
+        <div className="modal-header">
+          <h2 className="modal-title">
+            {link ? "링크 수정" : "링크 추가"}
           </h2>
-          <button
-            onClick={onClose}
-            className="p-1 rounded hover:bg-[var(--card-border)] transition-colors"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          <button onClick={onClose} className="modal-close">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+              <path d="M4 4l10 10M14 4L4 14" />
             </svg>
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-4 space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">URL *</label>
-            <div className="flex gap-2">
-              <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center overflow-hidden">
+        <form onSubmit={handleSubmit} className="modal-body">
+          <div className="form-field">
+            <label>URL *</label>
+            <div className="url-input-group">
+              <div className="favicon-preview">
                 {faviconLoading ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[var(--primary)]" />
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[var(--accent)]" />
                 ) : formData.favicon ? (
                   <img
                     src={formData.favicon}
                     alt=""
-                    className="w-6 h-6 object-contain"
                     onError={(e) => {
                       (e.target as HTMLImageElement).style.display = "none";
                     }}
                   />
                 ) : (
-                  <span className="text-[var(--muted)] text-xs">Icon</span>
+                  <span>?</span>
                 )}
               </div>
               <input
@@ -150,33 +143,33 @@ export default function LinkModal({
                 onChange={(e) => setFormData({ ...formData, url: e.target.value })}
                 onBlur={handleUrlBlur}
                 required
-                className="flex-1 px-3 py-2 bg-[var(--background)] border border-[var(--card-border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+                className="input"
                 placeholder="https://example.com"
               />
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-1">Title *</label>
+          <div className="form-field">
+            <label>제목 *</label>
             <input
               type="text"
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               required
-              className="w-full px-3 py-2 bg-[var(--background)] border border-[var(--card-border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
-              placeholder="Enter title"
+              className="input"
+              placeholder="링크 제목을 입력하세요"
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-1">Category *</label>
+          <div className="form-field">
+            <label>카테고리 *</label>
             <select
               value={formData.category}
               onChange={(e) => setFormData({ ...formData, category: e.target.value })}
               required
-              className="w-full px-3 py-2 bg-[var(--background)] border border-[var(--card-border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+              className="input"
             >
-              <option value="">Select category</option>
+              <option value="">카테고리 선택</option>
               {categories.map((cat) => (
                 <option key={cat.id} value={cat.id}>
                   {cat.name}
@@ -185,41 +178,37 @@ export default function LinkModal({
             </select>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-1">Description</label>
+          <div className="form-field">
+            <label>설명</label>
             <input
               type="text"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full px-3 py-2 bg-[var(--background)] border border-[var(--card-border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
-              placeholder="Brief description"
+              className="input"
+              placeholder="간단한 설명"
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-1">Memo</label>
+          <div className="form-field">
+            <label>메모</label>
             <textarea
               value={formData.memo}
               onChange={(e) => setFormData({ ...formData, memo: e.target.value })}
               rows={3}
-              className="w-full px-3 py-2 bg-[var(--background)] border border-[var(--card-border)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--primary)] resize-none"
-              placeholder="Personal notes (visible on hover)..."
+              className="input"
+              placeholder="개인 메모..."
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-2">Tags</label>
-            <div className="flex flex-wrap gap-2">
+          <div className="form-field">
+            <label>태그</label>
+            <div className="tag-select">
               {tags.map((tag) => (
                 <button
                   key={tag.id}
                   type="button"
                   onClick={() => toggleTag(tag.name)}
-                  className={`px-3 py-1 text-sm rounded-full transition-all ${
-                    formData.tags.includes(tag.name)
-                      ? "bg-[var(--primary)] text-white"
-                      : "bg-[var(--background)] border border-[var(--card-border)]"
-                  }`}
+                  className={`tag-option ${formData.tags.includes(tag.name) ? "selected" : ""}`}
                 >
                   {tag.name}
                 </button>
@@ -227,40 +216,31 @@ export default function LinkModal({
             </div>
           </div>
 
-          <div className="flex gap-4">
-            <label className="flex items-center gap-2 cursor-pointer">
+          <div className="form-field checkbox-group">
+            <label className="checkbox-label">
               <input
                 type="checkbox"
                 checked={formData.isPinned}
                 onChange={(e) => setFormData({ ...formData, isPinned: e.target.checked })}
-                className="w-4 h-4 rounded border-[var(--card-border)]"
               />
-              <span className="text-sm">Pin to top</span>
+              <span>상단 고정</span>
             </label>
-            <label className="flex items-center gap-2 cursor-pointer">
+            <label className="checkbox-label">
               <input
                 type="checkbox"
                 checked={formData.isFavorite}
                 onChange={(e) => setFormData({ ...formData, isFavorite: e.target.checked })}
-                className="w-4 h-4 rounded border-[var(--card-border)]"
               />
-              <span className="text-sm">Add to favorites</span>
+              <span>즐겨찾기 추가</span>
             </label>
           </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-[var(--card-border)]">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-sm font-medium rounded-lg hover:bg-[var(--card-border)] transition-colors"
-            >
-              Cancel
+          <div className="modal-footer">
+            <button type="button" onClick={onClose} className="btn-ghost">
+              취소
             </button>
-            <button
-              type="submit"
-              className="px-4 py-2 text-sm font-medium bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] transition-colors"
-            >
-              {link ? "Save Changes" : "Add Link"}
+            <button type="submit" className="btn-primary">
+              {link ? "저장" : "추가"}
             </button>
           </div>
         </form>
