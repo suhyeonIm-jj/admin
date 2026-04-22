@@ -1134,6 +1134,26 @@ kbd {
   opacity: 0.8;
 }
 
+.remember-me {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--fg-muted);
+}
+
+.remember-me input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.remember-me span {
+  user-select: none;
+}
+
 /* ===========================================================
    Link Modal
    =========================================================== */

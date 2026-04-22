@@ -17,7 +17,7 @@ function getUsers(): User[] {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, password } = body;
+    const { email, password, rememberMe } = body;
 
     if (!email || !password) {
       return NextResponse.json(
@@ -43,12 +43,24 @@ export async function POST(request: NextRequest) {
     });
 
     // Set session cookie
-    response.cookies.set("session", user.id, {
+    // If rememberMe is true, keep logged in for 7 days
+    // If rememberMe is false, session expires when browser closes
+    const cookieOptions: {
+      httpOnly: boolean;
+      secure: boolean;
+      sameSite: "lax";
+      maxAge?: number;
+    } = {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-    });
+    };
+
+    if (rememberMe) {
+      cookieOptions.maxAge = 60 * 60 * 24 * 7; // 7 days
+    }
+
+    response.cookies.set("session", user.id, cookieOptions);
 
     return response;
   } catch (error) {
