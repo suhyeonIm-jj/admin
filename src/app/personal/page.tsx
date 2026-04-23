@@ -109,11 +109,30 @@ export default function PersonalPage() {
   };
 
   const handleDeleteLink = async (id: string) => {
+    setLinks((prev) => prev.filter((link) => link.id !== id));
     try {
-      await fetch(`/api/links/${id}`, { method: "DELETE" });
-      fetchData();
+      const res = await fetch(`/api/links/${id}`, { method: "DELETE" });
+      if (!res.ok) fetchData();
     } catch (error) {
       console.error("Failed to delete link:", error);
+      fetchData();
+    }
+  };
+
+  const handleRenameCategory = async (id: string, name: string) => {
+    setCategories((prev) =>
+      prev.map((cat) => (cat.id === id ? { ...cat, name } : cat))
+    );
+    try {
+      const res = await fetch(`/api/categories/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      if (!res.ok) fetchData();
+    } catch (error) {
+      console.error("Failed to rename category:", error);
+      fetchData();
     }
   };
 
@@ -250,6 +269,7 @@ export default function PersonalPage() {
               onDeleteLink={handleDeleteLink}
               onTogglePin={handleTogglePin}
               onToggleFavorite={handleToggleFavorite}
+              onRenameCategory={handleRenameCategory}
             />
           );
         })}
