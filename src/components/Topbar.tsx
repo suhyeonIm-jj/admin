@@ -1,13 +1,9 @@
 "use client";
 
-type SortBy = "recent" | "name" | "visits" | "added";
-
 interface TopbarProps {
   workspace: "work" | "personal";
   view: "card" | "list" | "compact";
   setView: (v: "card" | "list" | "compact") => void;
-  sortBy: SortBy;
-  setSortBy: (s: SortBy) => void;
   onAdd: () => void;
   onOpenCommand: () => void;
 }
@@ -16,8 +12,6 @@ export default function Topbar({
   workspace,
   view,
   setView,
-  sortBy,
-  setSortBy,
   onAdd,
   onOpenCommand,
 }: TopbarProps) {
@@ -90,17 +84,6 @@ export default function Topbar({
               </svg>
             </button>
           </div>
-
-          <select
-            className="sort-select"
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as SortBy)}
-          >
-            <option value="recent">최근 방문 순</option>
-            <option value="name">이름 순</option>
-            <option value="visits">방문 횟수</option>
-            <option value="added">추가 순</option>
-          </select>
 
           <button className="btn-primary" onClick={onAdd}>
             <svg width="13" height="13" viewBox="0 0 13 13" fill="none">

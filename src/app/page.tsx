@@ -5,12 +5,27 @@ import { useRouter } from "next/navigation";
 import { Link, Category, Tag } from "@/types";
 import Sidebar from "@/components/Sidebar";
 import Topbar from "@/components/Topbar";
-import LinkCard from "@/components/LinkCard";
 import CommandPalette from "@/components/CommandPalette";
 import LinkModal from "@/components/LinkModal";
+import SortableLinkCard from "@/components/SortableLinkCard";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  rectSortingStrategy,
+  verticalListSortingStrategy,
+  arrayMove,
+} from "@dnd-kit/sortable";
 
 type ViewMode = "card" | "list" | "compact";
-type SortBy = "recent" | "name" | "visits" | "added";
 
 interface UserInfo {
   id: string;
@@ -26,7 +41,6 @@ export default function HomePage() {
   const [workspace, setWorkspace] = useState<"work" | "personal">("work");
   const [activeCategory, setActiveCategory] = useState("all");
   const [view, setView] = useState<ViewMode>("card");
-  const [sortBy, setSortBy] = useState<SortBy>("recent");
   const [isCommandOpen, setIsCommandOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingLink, setEditingLink] = useState<Link | null>(null);
@@ -34,7 +48,14 @@ export default function HomePage() {
   const [links, setLinks] = useState<Link[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
+  const [workCount, setWorkCount] = useState(0);
+  const [personalCount, setPersonalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
 
   // Check authentication
   useEffect(() => {
@@ -58,21 +79,27 @@ export default function HomePage() {
 
   const fetchData = useCallback(async () => {
     try {
-      const [linksRes, categoriesRes, tagsRes] = await Promise.all([
+      const [linksRes, categoriesRes, tagsRes, workRes, personalRes] = await Promise.all([
         fetch(`/api/links?type=${workspace}`),
         fetch(`/api/categories?type=${workspace}`),
         fetch("/api/tags"),
+        fetch("/api/links?type=work"),
+        fetch("/api/links?type=personal"),
       ]);
 
-      const [linksData, categoriesData, tagsData] = await Promise.all([
+      const [linksData, categoriesData, tagsData, workData, personalData] = await Promise.all([
         linksRes.json(),
         categoriesRes.json(),
         tagsRes.json(),
+        workRes.json(),
+        personalRes.json(),
       ]);
 
       setLinks(linksData);
       setCategories(categoriesData);
       setTags(tagsData);
+      setWorkCount(workData.length);
+      setPersonalCount(personalData.length);
     } catch (error) {
       console.error("Failed to fetch data:", error);
     } finally {
@@ -111,39 +138,25 @@ export default function HomePage() {
   const filteredLinks = links.filter((link) => {
     if (activeCategory === "all") return true;
     if (activeCategory === "pinned") return link.isFavorite || link.isPinned;
-    if (activeCategory === "recent") return true;
+    if (activeCategory === "recent") return !!link.lastVisited;
     return link.category === activeCategory;
   });
 
   // Sort links
-  const sortedLinks = [...filteredLinks].sort((a, b) => {
-    switch (sortBy) {
-      case "recent":
-        return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
-      case "name":
-        return a.title.localeCompare(b.title);
-      case "visits":
-        return b.usageCount - a.usageCount;
-      case "added":
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      default:
-        return 0;
+  const displayLinks = [...filteredLinks].sort((a, b) => {
+    if (activeCategory === "recent") {
+      return new Date(b.lastVisited!).getTime() - new Date(a.lastVisited!).getTime();
     }
+    return a.order - b.order;
   });
 
-  // If recent category, limit to recent 10
-  const displayLinks =
-    activeCategory === "recent" ? sortedLinks.slice(0, 10) : sortedLinks;
-
   // Count calculations
-  const workLinks = links.filter((l) => !l.category.startsWith("personal"));
-  const personalLinks = links.filter((l) => l.category.startsWith("personal"));
   const counts = {
-    work: workLinks.length,
-    personal: personalLinks.length,
+    work: workCount,
+    personal: personalCount,
     total: links.length,
     pinned: links.filter((l) => l.isFavorite || l.isPinned).length,
-    recent: Math.min(links.length, 10),
+    recent: links.filter((l) => !!l.lastVisited).length,
   };
 
   // Categories with counts
@@ -198,11 +211,40 @@ export default function HomePage() {
 
   const handleDeleteCategory = async (id: string) => {
     setCategories((prev) => prev.filter((cat) => cat.id !== id));
+    setLinks((prev) => prev.filter((link) => link.category !== id));
     try {
       const res = await fetch(`/api/categories/${id}`, { method: "DELETE" });
       if (!res.ok) fetchData();
     } catch (error) {
       console.error("Failed to delete category:", error);
+      fetchData();
+    }
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = displayLinks.findIndex((l) => l.id === active.id);
+    const newIndex = displayLinks.findIndex((l) => l.id === over.id);
+    const reordered = arrayMove([...displayLinks], oldIndex, newIndex);
+    const orderedIds = reordered.map((l) => l.id);
+
+    setLinks((prev) => {
+      const updated = prev.map((link) => {
+        const idx = orderedIds.indexOf(link.id);
+        return idx !== -1 ? { ...link, order: idx } : link;
+      });
+      return updated;
+    });
+
+    try {
+      await fetch("/api/links", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "reorder", orderedIds }),
+      });
+    } catch {
       fetchData();
     }
   };
@@ -296,8 +338,6 @@ export default function HomePage() {
           workspace={workspace}
           view={view}
           setView={setView}
-          sortBy={sortBy}
-          setSortBy={setSortBy}
           onAdd={() => {
             setEditingLink(null);
             setIsModalOpen(true);
@@ -326,61 +366,72 @@ export default function HomePage() {
                   </div>
                 </div>
 
-                {view === "card" && (
-                  <div className="grid">
-                    {displayLinks.map((link) => (
-                      <LinkCard
-                        key={link.id}
-                        link={link}
-                        view="card"
-                        category={getCategoryForLink(link)}
-                        onToggleFavorite={handleToggleFavorite}
-                        onEdit={handleEditLink}
-                        onDelete={handleDeleteLink}
-                      />
-                    ))}
-                  </div>
-                )}
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleDragEnd}
+                >
+                  <SortableContext
+                    items={displayLinks.map((l) => l.id)}
+                    strategy={view === "list" ? verticalListSortingStrategy : rectSortingStrategy}
+                  >
+                    {view === "card" && (
+                      <div className="grid">
+                        {displayLinks.map((link) => (
+                          <SortableLinkCard
+                            key={link.id}
+                            link={link}
+                            view="card"
+                            category={getCategoryForLink(link)}
+                            onToggleFavorite={handleToggleFavorite}
+                            onEdit={handleEditLink}
+                            onDelete={handleDeleteLink}
+                          />
+                        ))}
+                      </div>
+                    )}
 
-                {view === "list" && (
-                  <div className="list">
-                    <div className="list-header">
-                      <span></span>
-                      <span></span>
-                      <span>제목</span>
-                      <span>태그</span>
-                      <span>카테고리</span>
-                      <span></span>
-                    </div>
-                    {displayLinks.map((link) => (
-                      <LinkCard
-                        key={link.id}
-                        link={link}
-                        view="list"
-                        category={getCategoryForLink(link)}
-                        onToggleFavorite={handleToggleFavorite}
-                        onEdit={handleEditLink}
-                        onDelete={handleDeleteLink}
-                      />
-                    ))}
-                  </div>
-                )}
+                    {view === "list" && (
+                      <div className="list">
+                        <div className="list-header">
+                          <span></span>
+                          <span></span>
+                          <span>제목</span>
+                          <span>태그</span>
+                          <span>카테고리</span>
+                          <span></span>
+                        </div>
+                        {displayLinks.map((link) => (
+                          <SortableLinkCard
+                            key={link.id}
+                            link={link}
+                            view="list"
+                            category={getCategoryForLink(link)}
+                            onToggleFavorite={handleToggleFavorite}
+                            onEdit={handleEditLink}
+                            onDelete={handleDeleteLink}
+                          />
+                        ))}
+                      </div>
+                    )}
 
-                {view === "compact" && (
-                  <div className="compact-grid">
-                    {displayLinks.map((link) => (
-                      <LinkCard
-                        key={link.id}
-                        link={link}
-                        view="compact"
-                        category={getCategoryForLink(link)}
-                        onToggleFavorite={handleToggleFavorite}
-                        onEdit={handleEditLink}
-                        onDelete={handleDeleteLink}
-                      />
-                    ))}
-                  </div>
-                )}
+                    {view === "compact" && (
+                      <div className="compact-grid">
+                        {displayLinks.map((link) => (
+                          <SortableLinkCard
+                            key={link.id}
+                            link={link}
+                            view="compact"
+                            category={getCategoryForLink(link)}
+                            onToggleFavorite={handleToggleFavorite}
+                            onEdit={handleEditLink}
+                            onDelete={handleDeleteLink}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </SortableContext>
+                </DndContext>
 
                 {displayLinks.length === 0 && (
                   <div className="text-center py-12">

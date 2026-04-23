@@ -21,24 +21,24 @@
     "color": "#f59e0b"
   },
   {
-    "id": "cat-entertainment",
-    "name": "엔터테인먼트",
-    "type": "personal",
-    "order": 0,
-    "color": "#ef4444"
-  },
-  {
-    "id": "cat-shopping",
-    "name": "쇼핑",
-    "type": "personal",
-    "order": 1,
-    "color": "#ec4899"
-  },
-  {
     "name": "카테고리 추가",
     "type": "work",
     "order": 3,
     "color": "#6b4143",
     "id": "cat-1776952046894"
+  },
+  {
+    "id": "cat-personal-knowledge",
+    "name": "지식넓히기",
+    "type": "personal",
+    "order": 2,
+    "color": "#6366f1"
+  },
+  {
+    "id": "cat-personal-tools",
+    "name": "AI · 도구",
+    "type": "personal",
+    "order": 3,
+    "color": "#14b8a6"
   }
 ]

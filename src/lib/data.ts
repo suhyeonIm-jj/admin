@@ -74,8 +74,10 @@ export function incrementUsageCount(id: string): Link | null {
   const index = links.findIndex((link) => link.id === id);
   if (index === -1) return null;
 
+  const now = new Date().toISOString();
   links[index].usageCount += 1;
-  links[index].updatedAt = new Date().toISOString();
+  links[index].lastVisited = now;
+  links[index].updatedAt = now;
   writeJson("links.json", links);
   return links[index];
 }
@@ -127,6 +129,9 @@ export function deleteCategory(id: string): boolean {
   const filtered = categories.filter((c) => c.id !== id);
   if (filtered.length === categories.length) return false;
   writeJson("categories.json", filtered);
+
+  const links = getLinks();
+  writeJson("links.json", links.filter((l) => l.category !== id));
   return true;
 }
 

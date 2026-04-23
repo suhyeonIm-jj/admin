@@ -81,7 +81,11 @@ export default function Sidebar({
 
   const handleDelete = (e: React.MouseEvent, cat: CategoryWithCount) => {
     e.stopPropagation();
-    if (confirm(`"${cat.name}" 카테고리를 삭제하시겠습니까?\n카테고리에 속한 링크는 삭제되지 않습니다.`)) {
+    const linkCount = cat.count || 0;
+    const msg = linkCount > 0
+      ? `"${cat.name}" 카테고리를 삭제하시겠습니까?\n\n포함된 링크 ${linkCount}개도 함께 삭제됩니다.`
+      : `"${cat.name}" 카테고리를 삭제하시겠습니까?`;
+    if (confirm(msg)) {
       onDeleteCategory?.(cat.id);
     }
   };

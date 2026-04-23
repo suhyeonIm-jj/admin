@@ -11,6 +11,7 @@ export interface Link {
   isFavorite: boolean;
   usageCount: number;
   order: number;
+  lastVisited?: string;
   createdAt: string;
   updatedAt: string;
   userId?: string;
