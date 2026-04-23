@@ -1,7 +1,7 @@
 [
   {
     "id": "link-1",
-    "title": "GitHub",
+    "title": "깃헙",
     "url": "https://github.com",
     "favicon": "https://github.githubassets.com/favicons/favicon.svg",
     "description": "코드 저장소 및 협업 플랫폼",
@@ -13,10 +13,10 @@
     "category": "cat-dev",
     "isPinned": true,
     "isFavorite": false,
-    "usageCount": 150,
+    "usageCount": 151,
     "order": 0,
     "createdAt": "2024-01-01T00:00:00Z",
-    "updatedAt": "2024-01-01T00:00:00Z"
+    "updatedAt": "2026-04-23T13:41:28.531Z"
   },
   {
     "id": "link-2",
@@ -54,25 +54,6 @@
     "order": 2,
     "createdAt": "2024-01-03T00:00:00Z",
     "updatedAt": "2024-01-03T00:00:00Z"
-  },
-  {
-    "id": "link-4",
-    "title": "Figma",
-    "url": "https://figma.com",
-    "favicon": "https://static.figma.com/app/icon/1/favicon.png",
-    "description": "디자인 협업 툴",
-    "memo": "UI/UX 디자인 작업",
-    "tags": [
-      "디자인",
-      "협업"
-    ],
-    "category": "cat-design",
-    "isPinned": false,
-    "isFavorite": false,
-    "usageCount": 80,
-    "order": 3,
-    "createdAt": "2024-01-04T00:00:00Z",
-    "updatedAt": "2024-01-04T00:00:00Z"
   },
   {
     "id": "link-5",

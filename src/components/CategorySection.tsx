@@ -66,7 +66,7 @@ export default function CategorySection({
 
   return (
     <div className="mb-8">
-      <div className="flex items-center gap-2 mb-4 group/header">
+      <div className="flex items-center gap-2 mb-4">
         <button
           onClick={() => !isEditing && setIsCollapsed(!isCollapsed)}
           className="flex items-center gap-2"
@@ -111,7 +111,7 @@ export default function CategorySection({
         {!isEditing && onRenameCategory && (
           <button
             onClick={handleStartEdit}
-            className="opacity-0 group-hover/header:opacity-100 transition-opacity text-[var(--muted)] hover:text-[var(--foreground)] ml-1"
+            className="text-[var(--muted)] hover:text-[var(--foreground)] ml-1 transition-colors"
             title="카테고리 이름 변경"
           >
             <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">

@@ -169,13 +169,59 @@ export default function HomePage() {
   };
 
   const handleDeleteLink = async (id: string) => {
+    setLinks((prev) => prev.filter((link) => link.id !== id));
     try {
-      await fetch(`/api/links/${id}`, {
-        method: "DELETE",
+      const res = await fetch(`/api/links/${id}`, { method: "DELETE" });
+      if (!res.ok) fetchData();
+    } catch (error) {
+      console.error("Failed to delete link:", error);
+      fetchData();
+    }
+  };
+
+  const handleRenameCategory = async (id: string, name: string) => {
+    setCategories((prev) =>
+      prev.map((cat) => (cat.id === id ? { ...cat, name } : cat))
+    );
+    try {
+      const res = await fetch(`/api/categories/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      if (!res.ok) fetchData();
+    } catch (error) {
+      console.error("Failed to rename category:", error);
+      fetchData();
+    }
+  };
+
+  const handleDeleteCategory = async (id: string) => {
+    setCategories((prev) => prev.filter((cat) => cat.id !== id));
+    try {
+      const res = await fetch(`/api/categories/${id}`, { method: "DELETE" });
+      if (!res.ok) fetchData();
+    } catch (error) {
+      console.error("Failed to delete category:", error);
+      fetchData();
+    }
+  };
+
+  const handleAddCategory = async (name: string) => {
+    try {
+      await fetch("/api/categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          type: workspace,
+          order: categories.length,
+          color: "#" + Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, "0"),
+        }),
       });
       fetchData();
     } catch (error) {
-      console.error("Failed to delete link:", error);
+      console.error("Failed to add category:", error);
     }
   };
 
@@ -240,6 +286,9 @@ export default function HomePage() {
         tags={uniqueTags}
         user={user}
         onLogout={handleLogout}
+        onRenameCategory={handleRenameCategory}
+        onDeleteCategory={handleDeleteCategory}
+        onAddCategory={handleAddCategory}
       />
 
       <main className="main">

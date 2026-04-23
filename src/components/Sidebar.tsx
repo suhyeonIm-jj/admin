@@ -1,6 +1,7 @@
 "use client";
 
 import { Category } from "@/types";
+import { useState, useRef } from "react";
 
 interface CategoryWithCount extends Category {
   count?: number;
@@ -28,6 +29,9 @@ interface SidebarProps {
   tags: string[];
   user?: UserInfo | null;
   onLogout?: () => void;
+  onRenameCategory?: (id: string, name: string) => void;
+  onDeleteCategory?: (id: string) => void;
+  onAddCategory?: (name: string) => void;
 }
 
 export default function Sidebar({
@@ -40,7 +44,71 @@ export default function Sidebar({
   tags,
   user,
   onLogout,
+  onRenameCategory,
+  onDeleteCategory,
+  onAddCategory,
 }: SidebarProps) {
+  const [editingCatId, setEditingCatId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState("");
+  const [hoveredCatId, setHoveredCatId] = useState<string | null>(null);
+  const [isAddingCat, setIsAddingCat] = useState(false);
+  const [newCatName, setNewCatName] = useState("");
+  const editInputRef = useRef<HTMLInputElement>(null);
+  const addInputRef = useRef<HTMLInputElement>(null);
+
+  const startRename = (e: React.MouseEvent, cat: CategoryWithCount) => {
+    e.stopPropagation();
+    setEditingCatId(cat.id);
+    setEditingName(cat.name);
+    setTimeout(() => {
+      editInputRef.current?.focus();
+      editInputRef.current?.select();
+    }, 0);
+  };
+
+  const saveRename = (cat: CategoryWithCount) => {
+    const trimmed = editingName.trim();
+    if (trimmed && trimmed !== cat.name) {
+      onRenameCategory?.(cat.id, trimmed);
+    }
+    setEditingCatId(null);
+  };
+
+  const handleRenameKeyDown = (e: React.KeyboardEvent, cat: CategoryWithCount) => {
+    if (e.key === "Enter") saveRename(cat);
+    if (e.key === "Escape") setEditingCatId(null);
+  };
+
+  const handleDelete = (e: React.MouseEvent, cat: CategoryWithCount) => {
+    e.stopPropagation();
+    if (confirm(`"${cat.name}" 카테고리를 삭제하시겠습니까?\n카테고리에 속한 링크는 삭제되지 않습니다.`)) {
+      onDeleteCategory?.(cat.id);
+    }
+  };
+
+  const startAddCategory = () => {
+    setIsAddingCat(true);
+    setNewCatName("");
+    setTimeout(() => addInputRef.current?.focus(), 0);
+  };
+
+  const saveAddCategory = () => {
+    const trimmed = newCatName.trim();
+    if (trimmed) {
+      onAddCategory?.(trimmed);
+    }
+    setIsAddingCat(false);
+    setNewCatName("");
+  };
+
+  const handleAddKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") saveAddCategory();
+    if (e.key === "Escape") {
+      setIsAddingCat(false);
+      setNewCatName("");
+    }
+  };
+
   const today = new Date();
   const dateStr = today.toLocaleDateString("ko-KR", {
     year: "numeric",
@@ -123,20 +191,91 @@ export default function Sidebar({
         <div className="nav-section">
           <div className="nav-label">카테고리</div>
           {categories.map((cat) => (
-            <button
+            <div
               key={cat.id}
               className={`nav-item ${activeCategory === cat.id ? "active" : ""}`}
-              onClick={() => setActiveCategory(cat.id)}
+              style={{ cursor: "pointer" }}
+              onClick={() => editingCatId !== cat.id && setActiveCategory(cat.id)}
+              onMouseEnter={() => setHoveredCatId(cat.id)}
+              onMouseLeave={() => setHoveredCatId(null)}
             >
               <span className="cat-dot" style={{ background: cat.color }}></span>
-              <span>{cat.name}</span>
-              <span className="nav-count">{cat.count || 0}</span>
-            </button>
+
+              {editingCatId === cat.id ? (
+                <>
+                  <input
+                    ref={editInputRef}
+                    value={editingName}
+                    onChange={(e) => setEditingName(e.target.value)}
+                    onBlur={() => saveRename(cat)}
+                    onKeyDown={(e) => handleRenameKeyDown(e, cat)}
+                    onClick={(e) => e.stopPropagation()}
+                    className="bg-transparent outline-none border-b border-[var(--accent)] text-sm flex-1 min-w-0"
+                  />
+                  <span className="nav-count">{cat.count || 0}</span>
+                </>
+              ) : (
+                <>
+                  <span className="truncate" style={{ flex: "1 1 0", minWidth: 0 }}>{cat.name}</span>
+                  <span
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "2px",
+                      opacity: hoveredCatId === cat.id ? 1 : 0,
+                      pointerEvents: hoveredCatId === cat.id ? "auto" : "none",
+                      transition: "opacity 0.15s",
+                      flexShrink: 0,
+                    }}
+                  >
+                    {onRenameCategory && (
+                      <button
+                        onClick={(e) => startRename(e, cat)}
+                        title="이름 변경"
+                        style={{ color: "var(--fg-muted)", lineHeight: 1, padding: "1px" }}
+                        onMouseEnter={(e) => (e.currentTarget.style.color = "var(--fg)")}
+                        onMouseLeave={(e) => (e.currentTarget.style.color = "var(--fg-muted)")}
+                      >
+                        <IconEdit />
+                      </button>
+                    )}
+                    {onDeleteCategory && (
+                      <button
+                        onClick={(e) => handleDelete(e, cat)}
+                        title="삭제"
+                        style={{ color: "var(--fg-muted)", lineHeight: 1, padding: "1px" }}
+                        onMouseEnter={(e) => (e.currentTarget.style.color = "#e53e3e")}
+                        onMouseLeave={(e) => (e.currentTarget.style.color = "var(--fg-muted)")}
+                      >
+                        <IconTrash />
+                      </button>
+                    )}
+                  </span>
+                  <span className="nav-count" style={{ flexShrink: 0 }}>{cat.count || 0}</span>
+                </>
+              )}
+            </div>
           ))}
-          <button className="nav-item add-cat">
-            <IconPlus />
-            <span>카테고리 추가</span>
-          </button>
+
+          {isAddingCat ? (
+            <div className="nav-item" style={{ gap: "6px" }}>
+              <IconPlus />
+              <input
+                ref={addInputRef}
+                value={newCatName}
+                onChange={(e) => setNewCatName(e.target.value)}
+                onBlur={saveAddCategory}
+                onKeyDown={handleAddKeyDown}
+                placeholder="카테고리 이름"
+                className="bg-transparent outline-none border-b border-[var(--accent)] text-sm flex-1 min-w-0"
+              />
+            </div>
+          ) : (
+            <button className="nav-item add-cat" onClick={startAddCategory}>
+              <IconPlus />
+              <span>카테고리 추가</span>
+            </button>
+          )}
         </div>
 
         <div className="nav-section">
@@ -208,6 +347,23 @@ function IconPlus() {
   return (
     <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
       <path d="M7.5 3v9M3 7.5h9" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+    </svg>
+  );
+}
+
+function IconEdit() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M10 2l2 2-7 7H3v-2l7-7z" />
+      <path d="M8.5 3.5l2 2" />
+    </svg>
+  );
+}
+
+function IconTrash() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2 4h10M5 4V3a1 1 0 011-1h2a1 1 0 011 1v1M11 4v7a1 1 0 01-1 1H4a1 1 0 01-1-1V4M6 7v3M8 7v3" />
     </svg>
   );
 }
