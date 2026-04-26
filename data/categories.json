@@ -10,14 +10,14 @@
     "id": "cat-communication",
     "name": "커뮤니케이션",
     "type": "work",
-    "order": 2,
+    "order": 0,
     "color": "#8b5cf6"
   },
   {
     "id": "cat-design",
     "name": "디자인",
     "type": "work",
-    "order": 3,
+    "order": 2,
     "color": "#f59e0b"
   },
   {
@@ -29,16 +29,23 @@
   },
   {
     "id": "cat-personal-knowledge",
-    "name": "지식넓히기",
+    "name": "📝 studing",
     "type": "personal",
-    "order": 2,
+    "order": 0,
     "color": "#6366f1"
   },
   {
     "id": "cat-personal-tools",
     "name": "AI · 도구",
     "type": "personal",
-    "order": 3,
+    "order": 2,
     "color": "#14b8a6"
+  },
+  {
+    "name": "📚 reading",
+    "type": "personal",
+    "order": 1,
+    "color": "#019953",
+    "id": "cat-1777201658751"
   }
 ]
