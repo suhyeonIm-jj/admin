@@ -8,10 +8,9 @@ interface CategoryWithCount extends Category {
 }
 
 interface ContentFilterProps {
-  activeCategory: string;
-  setActiveCategory: (cat: string) => void;
+  selectedCategory: string | null;
+  setSelectedCategory: (cat: string | null) => void;
   categories: CategoryWithCount[];
-  counts: { total: number; pinned: number; recent: number };
   tags: string[];
   selectedTags: string[];
   onToggleTag: (tag: string) => void;
@@ -21,10 +20,9 @@ interface ContentFilterProps {
 }
 
 export default function ContentFilter({
-  activeCategory,
-  setActiveCategory,
+  selectedCategory,
+  setSelectedCategory,
   categories,
-  counts,
   tags,
   selectedTags,
   onToggleTag,
@@ -83,9 +81,7 @@ export default function ContentFilter({
 
   const saveAddCategory = () => {
     const trimmed = newCatName.trim();
-    if (trimmed) {
-      onAddCategory?.(trimmed);
-    }
+    if (trimmed) onAddCategory?.(trimmed);
     setIsAddingCat(false);
     setNewCatName("");
   };
@@ -98,113 +94,96 @@ export default function ContentFilter({
     }
   };
 
+  const hasFilters = categories.length > 0 || tags.length > 0;
+  if (!hasFilters) return null;
+
   return (
     <div className="content-filter">
-      <div className="filter-row">
-        <button
-          className={`filter-pill ${activeCategory === "all" ? "active" : ""}`}
-          onClick={() => setActiveCategory("all")}
-        >
-          <IconGrid />
-          전체
-          <span className="filter-pill-count">{counts.total}</span>
-        </button>
-        <button
-          className={`filter-pill ${activeCategory === "pinned" ? "active" : ""}`}
-          onClick={() => setActiveCategory("pinned")}
-        >
-          <IconStar />
-          즐겨찾기
-          <span className="filter-pill-count">{counts.pinned}</span>
-        </button>
-        <button
-          className={`filter-pill ${activeCategory === "recent" ? "active" : ""}`}
-          onClick={() => setActiveCategory("recent")}
-        >
-          <IconClock />
-          최근 방문
-          <span className="filter-pill-count">{counts.recent}</span>
-        </button>
+      {/* Row 1: category chips */}
+      {categories.length > 0 && (
+        <div className="filter-row">
+          {categories.map((cat) => (
+            <div
+              key={cat.id}
+              className={`cat-chip ${selectedCategory === cat.id ? "active" : ""}`}
+              onMouseEnter={() => setHoveredCatId(cat.id)}
+              onMouseLeave={() => setHoveredCatId(null)}
+              onClick={() =>
+                editingCatId !== cat.id &&
+                setSelectedCategory(selectedCategory === cat.id ? null : cat.id)
+              }
+            >
+              <span className="chip-dot" style={{ background: cat.color }} />
+              {editingCatId === cat.id ? (
+                <input
+                  ref={editInputRef}
+                  value={editingName}
+                  onChange={(e) => setEditingName(e.target.value)}
+                  onBlur={() => saveRename(cat)}
+                  onKeyDown={(e) => handleRenameKeyDown(e, cat)}
+                  onClick={(e) => e.stopPropagation()}
+                  className="chip-edit-input"
+                />
+              ) : (
+                <>
+                  <span className="chip-name">{cat.name}</span>
+                  <span className="chip-count">{cat.count || 0}</span>
+                </>
+              )}
+              {editingCatId !== cat.id && (
+                <span
+                  className="chip-actions"
+                  style={{
+                    opacity: hoveredCatId === cat.id ? 1 : 0,
+                    pointerEvents: hoveredCatId === cat.id ? "auto" : "none",
+                    transition: "opacity 0.12s",
+                  }}
+                >
+                  {onRenameCategory && (
+                    <button
+                      className="chip-action-btn"
+                      onClick={(e) => startRename(e, cat)}
+                      title="이름 변경"
+                    >
+                      <IconEdit />
+                    </button>
+                  )}
+                  {onDeleteCategory && (
+                    <button
+                      className="chip-action-btn del"
+                      onClick={(e) => handleDelete(e, cat)}
+                      title="삭제"
+                    >
+                      <IconTrash />
+                    </button>
+                  )}
+                </span>
+              )}
+            </div>
+          ))}
 
-        {categories.length > 0 && <span className="filter-divider" />}
-
-        {categories.map((cat) => (
-          <div
-            key={cat.id}
-            className={`cat-chip ${activeCategory === cat.id ? "active" : ""}`}
-            onMouseEnter={() => setHoveredCatId(cat.id)}
-            onMouseLeave={() => setHoveredCatId(null)}
-            onClick={() => editingCatId !== cat.id && setActiveCategory(cat.id)}
-          >
-            <span className="chip-dot" style={{ background: cat.color }} />
-            {editingCatId === cat.id ? (
+          {isAddingCat ? (
+            <div className="cat-chip adding">
               <input
-                ref={editInputRef}
-                value={editingName}
-                onChange={(e) => setEditingName(e.target.value)}
-                onBlur={() => saveRename(cat)}
-                onKeyDown={(e) => handleRenameKeyDown(e, cat)}
-                onClick={(e) => e.stopPropagation()}
+                ref={addInputRef}
+                value={newCatName}
+                onChange={(e) => setNewCatName(e.target.value)}
+                onBlur={saveAddCategory}
+                onKeyDown={handleAddKeyDown}
+                placeholder="카테고리 이름"
                 className="chip-edit-input"
               />
-            ) : (
-              <>
-                <span className="chip-name">{cat.name}</span>
-                <span className="chip-count">{cat.count || 0}</span>
-              </>
-            )}
-            {editingCatId !== cat.id && (
-              <span
-                className="chip-actions"
-                style={{
-                  opacity: hoveredCatId === cat.id ? 1 : 0,
-                  pointerEvents: hoveredCatId === cat.id ? "auto" : "none",
-                  transition: "opacity 0.12s",
-                }}
-              >
-                {onRenameCategory && (
-                  <button
-                    className="chip-action-btn"
-                    onClick={(e) => startRename(e, cat)}
-                    title="이름 변경"
-                  >
-                    <IconEdit />
-                  </button>
-                )}
-                {onDeleteCategory && (
-                  <button
-                    className="chip-action-btn del"
-                    onClick={(e) => handleDelete(e, cat)}
-                    title="삭제"
-                  >
-                    <IconTrash />
-                  </button>
-                )}
-              </span>
-            )}
-          </div>
-        ))}
+            </div>
+          ) : (
+            <button className="filter-pill add-cat" onClick={startAddCategory}>
+              <IconPlus />
+              추가
+            </button>
+          )}
+        </div>
+      )}
 
-        {isAddingCat ? (
-          <div className="cat-chip adding">
-            <input
-              ref={addInputRef}
-              value={newCatName}
-              onChange={(e) => setNewCatName(e.target.value)}
-              onBlur={saveAddCategory}
-              onKeyDown={handleAddKeyDown}
-              placeholder="카테고리 이름"
-              className="chip-edit-input"
-            />
-          </div>
-        ) : (
-          <button className="filter-pill add-cat" onClick={startAddCategory}>
-            <IconPlus />
-            추가
-          </button>
-        )}
-      </div>
-
+      {/* Row 2: tag chips */}
       {tags.length > 0 && (
         <div className="filter-row">
           {tags.map((tag) => (
@@ -219,34 +198,6 @@ export default function ContentFilter({
         </div>
       )}
     </div>
-  );
-}
-
-function IconGrid() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-      <rect x="1" y="1" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.2" />
-      <rect x="7" y="1" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.2" />
-      <rect x="1" y="7" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.2" />
-      <rect x="7" y="7" width="4" height="4" rx="1" stroke="currentColor" strokeWidth="1.2" />
-    </svg>
-  );
-}
-
-function IconStar() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round">
-      <path d="M7 1.5l1.7 3.55 3.9.48-2.88 2.68.74 3.85L7 10.24 3.54 12.06l.74-3.85L1.4 5.53l3.9-.48L7 1.5z" />
-    </svg>
-  );
-}
-
-function IconClock() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
-      <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.3" />
-      <path d="M7 4v3l2 1.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-    </svg>
   );
 }
 

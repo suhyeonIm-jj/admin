@@ -11,8 +11,12 @@ interface UserInfo {
 interface SidebarProps {
   workspace: "work" | "personal";
   setWorkspace: (ws: "work" | "personal") => void;
+  viewMode: "all" | "pinned" | "recent";
+  setViewMode: (mode: "all" | "pinned" | "recent") => void;
   workCount: number;
   personalCount: number;
+  pinnedCount: number;
+  recentCount: number;
   user?: UserInfo | null;
   onLogout?: () => void;
 }
@@ -20,12 +24,16 @@ interface SidebarProps {
 export default function Sidebar({
   workspace,
   setWorkspace,
+  viewMode,
+  setViewMode,
   workCount,
   personalCount,
+  pinnedCount,
+  recentCount,
   user,
   onLogout,
 }: SidebarProps) {
-  const [showLogoutHint, setShowLogoutHint] = useState(false);
+  const [showLogoutBtn, setShowLogoutBtn] = useState(false);
 
   const today = new Date();
   const dateStr = today.toLocaleDateString("ko-KR", {
@@ -36,6 +44,12 @@ export default function Sidebar({
   });
 
   const getInitials = (name: string) => name.slice(0, 2).toUpperCase();
+
+  const subItems: { mode: "all" | "pinned" | "recent"; label: string; count: number; icon: React.ReactNode }[] = [
+    { mode: "all", label: "전체", count: workspace === "work" ? workCount : personalCount, icon: <IconGrid /> },
+    { mode: "pinned", label: "즐겨찾기", count: pinnedCount, icon: <IconStar /> },
+    { mode: "recent", label: "최근 방문", count: recentCount, icon: <IconClock /> },
+  ];
 
   return (
     <aside className="sidebar">
@@ -59,22 +73,56 @@ export default function Sidebar({
       <nav className="nav">
         <div className="nav-section">
           <div className="nav-label">워크스페이스</div>
+
+          {/* Work */}
           <button
             className={`nav-item ${workspace === "work" ? "active" : ""}`}
-            onClick={() => setWorkspace("work")}
+            onClick={() => { setWorkspace("work"); setViewMode("all"); }}
           >
             <span className="ws-dot work" />
             <span>업무</span>
             <span className="nav-count">{workCount}</span>
           </button>
+          {workspace === "work" && (
+            <div className="nav-sub">
+              {subItems.map(({ mode, label, count, icon }) => (
+                <button
+                  key={mode}
+                  className={`nav-sub-item ${viewMode === mode ? "active" : ""}`}
+                  onClick={() => setViewMode(mode)}
+                >
+                  {icon}
+                  <span>{label}</span>
+                  <span className="nav-count">{count}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Personal */}
           <button
             className={`nav-item ${workspace === "personal" ? "active" : ""}`}
-            onClick={() => setWorkspace("personal")}
+            onClick={() => { setWorkspace("personal"); setViewMode("all"); }}
           >
             <span className="ws-dot personal" />
             <span>개인</span>
             <span className="nav-count">{personalCount}</span>
           </button>
+          {workspace === "personal" && (
+            <div className="nav-sub">
+              {subItems.map(({ mode, label, count, icon }) => (
+                <button
+                  key={mode}
+                  className={`nav-sub-item ${viewMode === mode ? "active" : ""}`}
+                  onClick={() => setViewMode(mode)}
+                >
+                  {icon}
+                  <span>{label}</span>
+                  <span className="nav-count">{count}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </nav>
 
@@ -83,15 +131,15 @@ export default function Sidebar({
         {user ? (
           <div
             className="user-card"
-            onMouseEnter={() => setShowLogoutHint(true)}
-            onMouseLeave={() => setShowLogoutHint(false)}
+            onMouseEnter={() => setShowLogoutBtn(true)}
+            onMouseLeave={() => setShowLogoutBtn(false)}
           >
             <div className="avatar">{getInitials(user.name)}</div>
             <div className="user-info">
               <div className="user-name">{user.name}</div>
               <div className="user-email">{user.email}</div>
             </div>
-            {showLogoutHint && (
+            {showLogoutBtn && (
               <button className="icon-btn" title="로그아웃" onClick={onLogout}>
                 <IconLogout />
               </button>
@@ -108,6 +156,34 @@ export default function Sidebar({
         )}
       </div>
     </aside>
+  );
+}
+
+function IconGrid() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+      <rect x="1.5" y="1.5" width="4" height="4" rx="0.8" stroke="currentColor" strokeWidth="1.2" />
+      <rect x="7.5" y="1.5" width="4" height="4" rx="0.8" stroke="currentColor" strokeWidth="1.2" />
+      <rect x="1.5" y="7.5" width="4" height="4" rx="0.8" stroke="currentColor" strokeWidth="1.2" />
+      <rect x="7.5" y="7.5" width="4" height="4" rx="0.8" stroke="currentColor" strokeWidth="1.2" />
+    </svg>
+  );
+}
+
+function IconStar() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round">
+      <path d="M7 1.5l1.7 3.55 3.9.48-2.88 2.68.74 3.85L7 10.24 3.54 12.06l.74-3.85L1.4 5.53l3.9-.48L7 1.5z" />
+    </svg>
+  );
+}
+
+function IconClock() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+      <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.3" />
+      <path d="M7 4v3l2 1.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+    </svg>
   );
 }
 

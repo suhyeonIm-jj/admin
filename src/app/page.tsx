@@ -40,7 +40,8 @@ export default function HomePage() {
   const [isAuthLoading, setIsAuthLoading] = useState(true);
 
   const [workspace, setWorkspace] = useState<"work" | "personal">("work");
-  const [activeCategory, setActiveCategory] = useState("all");
+  const [viewMode, setViewMode] = useState<"all" | "pinned" | "recent">("all");
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [view, setView] = useState<ViewMode>("card");
   const [isCommandOpen, setIsCommandOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -144,27 +145,28 @@ export default function HomePage() {
 
   // Reset filters on workspace switch
   useEffect(() => {
-    setActiveCategory("all");
+    setViewMode("all");
+    setSelectedCategory(null);
     setSelectedTags([]);
   }, [workspace]);
 
-  // Filter links based on active category + selected tags
+  // viewMode = base set, selectedCategory + selectedTags = additional filters
   const filteredLinks = links.filter((link) => {
-    const catOk = (() => {
-      if (activeCategory === "all") return true;
-      if (activeCategory === "pinned") return link.isFavorite || link.isPinned;
-      if (activeCategory === "recent") return !!link.lastVisited;
-      return link.category === activeCategory;
+    const viewOk = (() => {
+      if (viewMode === "all") return true;
+      if (viewMode === "pinned") return link.isFavorite || link.isPinned;
+      if (viewMode === "recent") return !!link.lastVisited;
+      return true;
     })();
+    const catOk = selectedCategory === null || link.category === selectedCategory;
     const tagOk =
       selectedTags.length === 0 ||
       selectedTags.every((t) => link.tags.includes(t));
-    return catOk && tagOk;
+    return viewOk && catOk && tagOk;
   });
 
-  // Sort links
   const displayLinks = [...filteredLinks].sort((a, b) => {
-    if (activeCategory === "recent") {
+    if (viewMode === "recent") {
       return new Date(b.lastVisited!).getTime() - new Date(a.lastVisited!).getTime();
     }
     return a.order - b.order;
@@ -230,6 +232,7 @@ export default function HomePage() {
   };
 
   const handleDeleteCategory = async (id: string) => {
+    if (selectedCategory === id) setSelectedCategory(null);
     setCategories((prev) => prev.filter((cat) => cat.id !== id));
     setLinks((prev) => prev.filter((link) => link.category !== id));
     try {
@@ -318,13 +321,14 @@ export default function HomePage() {
     return categories.find((c) => c.id === link.category);
   };
 
-  // Get section title based on active category
   const getSectionTitle = () => {
-    if (activeCategory === "all") return "전체 링크";
-    if (activeCategory === "pinned") return "즐겨찾기";
-    if (activeCategory === "recent") return "최근 방문";
-    const cat = categories.find((c) => c.id === activeCategory);
-    return cat?.name || "링크";
+    if (viewMode === "pinned") return "즐겨찾기";
+    if (viewMode === "recent") return "최근 방문";
+    if (selectedCategory) {
+      const cat = categories.find((c) => c.id === selectedCategory);
+      return cat?.name || "전체 링크";
+    }
+    return "전체 링크";
   };
 
   // Show loading while checking auth
@@ -341,8 +345,12 @@ export default function HomePage() {
       <Sidebar
         workspace={workspace}
         setWorkspace={setWorkspace}
+        viewMode={viewMode}
+        setViewMode={setViewMode}
         workCount={counts.work}
         personalCount={counts.personal}
+        pinnedCount={counts.pinned}
+        recentCount={counts.recent}
         user={user}
         onLogout={handleLogout}
       />
@@ -360,14 +368,9 @@ export default function HomePage() {
         />
 
         <ContentFilter
-          activeCategory={activeCategory}
-          setActiveCategory={setActiveCategory}
+          selectedCategory={selectedCategory}
+          setSelectedCategory={setSelectedCategory}
           categories={categoriesWithCounts}
-          counts={{
-            total: counts.total,
-            pinned: counts.pinned,
-            recent: counts.recent,
-          }}
           tags={uniqueTags}
           selectedTags={selectedTags}
           onToggleTag={handleToggleTag}
@@ -387,7 +390,7 @@ export default function HomePage() {
               <div className="section">
                 <div className="section-header">
                   <div className="section-title">
-                    {activeCategory === "pinned" && (
+                    {viewMode === "pinned" && (
                       <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="pin-icon">
                         <path d="M7 1.5l1.7 3.55 3.9.48-2.88 2.68.74 3.85L7 10.24 3.54 12.06l.74-3.85L1.4 5.53l3.9-.48L7 1.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/>
                       </svg>
@@ -467,7 +470,7 @@ export default function HomePage() {
                 {displayLinks.length === 0 && (
                   <div className="text-center py-12">
                     <p className="text-[var(--fg-muted)]">
-                      {activeCategory === "pinned"
+                      {viewMode === "pinned"
                         ? "즐겨찾기한 링크가 없습니다."
                         : "링크가 없습니다."}
                     </p>
