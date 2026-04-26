@@ -510,7 +510,7 @@ export default function HomePage() {
         link={editingLink}
         categories={categories}
         tags={tags}
-        defaultCategory={categories[0]?.id}
+        defaultCategory={selectedCategory ?? categories[0]?.id}
       />
     </div>
   );

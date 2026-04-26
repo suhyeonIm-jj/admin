@@ -36,6 +36,7 @@ export default function LinkModal({
   const [faviconLoading, setFaviconLoading] = useState(false);
 
   useEffect(() => {
+    if (!isOpen) return;
     if (link) {
       setFormData({
         title: link.title,
@@ -61,7 +62,7 @@ export default function LinkModal({
         isFavorite: false,
       });
     }
-  }, [link, defaultCategory, categories]);
+  }, [isOpen, link, defaultCategory, categories]);
 
   const fetchFavicon = useCallback(async (url: string) => {
     if (!url) return;

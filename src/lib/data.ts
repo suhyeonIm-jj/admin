@@ -36,9 +36,11 @@ export function getLinkById(id: string): Link | undefined {
 
 export function createLink(link: Omit<Link, "id" | "createdAt" | "updatedAt">): Link {
   const links = getLinks();
+  const maxOrder = links.length > 0 ? Math.max(...links.map((l) => l.order)) : -1;
   const newLink: Link = {
     ...link,
     id: `link-${Date.now()}`,
+    order: maxOrder + 1,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
