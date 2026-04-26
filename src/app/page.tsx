@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Link, Category, Tag } from "@/types";
 import Sidebar from "@/components/Sidebar";
 import Topbar from "@/components/Topbar";
+import ContentFilter from "@/components/ContentFilter";
 import CommandPalette from "@/components/CommandPalette";
 import LinkModal from "@/components/LinkModal";
 import SortableLinkCard from "@/components/SortableLinkCard";
@@ -50,6 +51,7 @@ export default function HomePage() {
   const [tags, setTags] = useState<Tag[]>([]);
   const [workCount, setWorkCount] = useState(0);
   const [personalCount, setPersonalCount] = useState(0);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const sensors = useSensors(
@@ -134,12 +136,30 @@ export default function HomePage() {
     }
   };
 
-  // Filter links based on active category
+  const handleToggleTag = (tag: string) => {
+    setSelectedTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+    );
+  };
+
+  // Reset filters on workspace switch
+  useEffect(() => {
+    setActiveCategory("all");
+    setSelectedTags([]);
+  }, [workspace]);
+
+  // Filter links based on active category + selected tags
   const filteredLinks = links.filter((link) => {
-    if (activeCategory === "all") return true;
-    if (activeCategory === "pinned") return link.isFavorite || link.isPinned;
-    if (activeCategory === "recent") return !!link.lastVisited;
-    return link.category === activeCategory;
+    const catOk = (() => {
+      if (activeCategory === "all") return true;
+      if (activeCategory === "pinned") return link.isFavorite || link.isPinned;
+      if (activeCategory === "recent") return !!link.lastVisited;
+      return link.category === activeCategory;
+    })();
+    const tagOk =
+      selectedTags.length === 0 ||
+      selectedTags.every((t) => link.tags.includes(t));
+    return catOk && tagOk;
   });
 
   // Sort links
@@ -321,16 +341,10 @@ export default function HomePage() {
       <Sidebar
         workspace={workspace}
         setWorkspace={setWorkspace}
-        activeCategory={activeCategory}
-        setActiveCategory={setActiveCategory}
-        categories={categoriesWithCounts}
-        counts={counts}
-        tags={uniqueTags}
+        workCount={counts.work}
+        personalCount={counts.personal}
         user={user}
         onLogout={handleLogout}
-        onRenameCategory={handleRenameCategory}
-        onDeleteCategory={handleDeleteCategory}
-        onAddCategory={handleAddCategory}
       />
 
       <main className="main">
@@ -343,6 +357,23 @@ export default function HomePage() {
             setIsModalOpen(true);
           }}
           onOpenCommand={() => setIsCommandOpen(true)}
+        />
+
+        <ContentFilter
+          activeCategory={activeCategory}
+          setActiveCategory={setActiveCategory}
+          categories={categoriesWithCounts}
+          counts={{
+            total: counts.total,
+            pinned: counts.pinned,
+            recent: counts.recent,
+          }}
+          tags={uniqueTags}
+          selectedTags={selectedTags}
+          onToggleTag={handleToggleTag}
+          onRenameCategory={handleRenameCategory}
+          onDeleteCategory={handleDeleteCategory}
+          onAddCategory={handleAddCategory}
         />
 
         <div className="content">
