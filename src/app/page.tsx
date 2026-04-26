@@ -272,6 +272,24 @@ export default function HomePage() {
     }
   };
 
+  const handleReorderCategories = async (orderedIds: string[]) => {
+    setCategories((prev) => {
+      const idToIdx = Object.fromEntries(orderedIds.map((id, i) => [id, i]));
+      return [...prev]
+        .map((cat) => ({ ...cat, order: idToIdx[cat.id] ?? cat.order }))
+        .sort((a, b) => a.order - b.order);
+    });
+    try {
+      await fetch("/api/categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "reorder", orderedIds }),
+      });
+    } catch {
+      fetchData();
+    }
+  };
+
   const handleAddCategory = async (name: string) => {
     try {
       await fetch("/api/categories", {
@@ -377,6 +395,7 @@ export default function HomePage() {
           onRenameCategory={handleRenameCategory}
           onDeleteCategory={handleDeleteCategory}
           onAddCategory={handleAddCategory}
+          onReorderCategories={handleReorderCategories}
         />
 
         <div className="content">

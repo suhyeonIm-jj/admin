@@ -126,6 +126,15 @@ export function updateCategory(id: string, updates: Partial<Category>): Category
   return categories[index];
 }
 
+export function reorderCategories(orderedIds: string[]): void {
+  const categories = getCategories();
+  orderedIds.forEach((id, index) => {
+    const cat = categories.find((c) => c.id === id);
+    if (cat) cat.order = index;
+  });
+  writeJson("categories.json", categories);
+}
+
 export function deleteCategory(id: string): boolean {
   const categories = getCategories();
   const filtered = categories.filter((c) => c.id !== id);

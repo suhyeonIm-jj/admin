@@ -2,6 +2,21 @@
 
 import { Category } from "@/types";
 import { useState, useRef } from "react";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  useSortable,
+  rectSortingStrategy,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface CategoryWithCount extends Category {
   count?: number;
@@ -17,7 +32,125 @@ interface ContentFilterProps {
   onRenameCategory?: (id: string, name: string) => void;
   onDeleteCategory?: (id: string) => void;
   onAddCategory?: (name: string) => void;
+  onReorderCategories?: (orderedIds: string[]) => void;
 }
+
+/* ── Sortable chip ── */
+
+interface SortableCatChipProps {
+  cat: CategoryWithCount;
+  isSelected: boolean;
+  onSelect: () => void;
+  isEditing: boolean;
+  editInputRef: React.RefObject<HTMLInputElement | null>;
+  editingName: string;
+  onEditingNameChange: (name: string) => void;
+  onSaveRename: () => void;
+  onRenameKeyDown: (e: React.KeyboardEvent) => void;
+  onStartRename: (e: React.MouseEvent) => void;
+  onDelete: (e: React.MouseEvent) => void;
+  canRename: boolean;
+  canDelete: boolean;
+}
+
+function SortableCatChip({
+  cat,
+  isSelected,
+  onSelect,
+  isEditing,
+  editInputRef,
+  editingName,
+  onEditingNameChange,
+  onSaveRename,
+  onRenameKeyDown,
+  onStartRename,
+  onDelete,
+  canRename,
+  canDelete,
+}: SortableCatChipProps) {
+  const [isHovered, setIsHovered] = useState(false);
+
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: cat.id, disabled: isEditing });
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.4 : 1,
+        cursor: isDragging ? "grabbing" : undefined,
+      }}
+      className={`cat-chip ${isSelected ? "active" : ""}`}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onClick={() => !isEditing && onSelect()}
+      {...attributes}
+      {...listeners}
+    >
+      <span className="chip-dot" style={{ background: cat.color }} />
+
+      {isEditing ? (
+        <input
+          ref={editInputRef}
+          value={editingName}
+          onChange={(e) => onEditingNameChange(e.target.value)}
+          onBlur={onSaveRename}
+          onKeyDown={onRenameKeyDown}
+          onClick={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+          className="chip-edit-input"
+        />
+      ) : (
+        <>
+          <span className="chip-name">{cat.name}</span>
+          <span className="chip-count">{cat.count || 0}</span>
+        </>
+      )}
+
+      {!isEditing && (
+        <span
+          className="chip-actions"
+          style={{
+            opacity: isHovered ? 1 : 0,
+            pointerEvents: isHovered ? "auto" : "none",
+            transition: "opacity 0.12s",
+          }}
+        >
+          {canRename && (
+            <button
+              className="chip-action-btn"
+              onClick={onStartRename}
+              onPointerDown={(e) => e.stopPropagation()}
+              title="이름 변경"
+            >
+              <IconEdit />
+            </button>
+          )}
+          {canDelete && (
+            <button
+              className="chip-action-btn del"
+              onClick={onDelete}
+              onPointerDown={(e) => e.stopPropagation()}
+              title="삭제"
+            >
+              <IconTrash />
+            </button>
+          )}
+        </span>
+      )}
+    </div>
+  );
+}
+
+/* ── ContentFilter ── */
 
 export default function ContentFilter({
   selectedCategory,
@@ -29,14 +162,18 @@ export default function ContentFilter({
   onRenameCategory,
   onDeleteCategory,
   onAddCategory,
+  onReorderCategories,
 }: ContentFilterProps) {
   const [editingCatId, setEditingCatId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
-  const [hoveredCatId, setHoveredCatId] = useState<string | null>(null);
   const [isAddingCat, setIsAddingCat] = useState(false);
   const [newCatName, setNewCatName] = useState("");
   const editInputRef = useRef<HTMLInputElement>(null);
   const addInputRef = useRef<HTMLInputElement>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+  );
 
   const startRename = (e: React.MouseEvent, cat: CategoryWithCount) => {
     e.stopPropagation();
@@ -73,6 +210,15 @@ export default function ContentFilter({
     }
   };
 
+  const handleCatDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = categories.findIndex((c) => c.id === active.id);
+    const newIndex = categories.findIndex((c) => c.id === over.id);
+    const reordered = arrayMove([...categories], oldIndex, newIndex);
+    onReorderCategories?.(reordered.map((c) => c.id));
+  };
+
   const startAddCategory = () => {
     setIsAddingCat(true);
     setNewCatName("");
@@ -94,73 +240,46 @@ export default function ContentFilter({
     }
   };
 
-  const hasFilters = categories.length > 0 || tags.length > 0;
-  if (!hasFilters) return null;
+  if (categories.length === 0 && tags.length === 0) return null;
 
   return (
     <div className="content-filter">
-      {/* Row 1: category chips */}
+      {/* Row 1: category chips (sortable) */}
       {categories.length > 0 && (
         <div className="filter-row">
-          {categories.map((cat) => (
-            <div
-              key={cat.id}
-              className={`cat-chip ${selectedCategory === cat.id ? "active" : ""}`}
-              onMouseEnter={() => setHoveredCatId(cat.id)}
-              onMouseLeave={() => setHoveredCatId(null)}
-              onClick={() =>
-                editingCatId !== cat.id &&
-                setSelectedCategory(selectedCategory === cat.id ? null : cat.id)
-              }
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleCatDragEnd}
+          >
+            <SortableContext
+              items={categories.map((c) => c.id)}
+              strategy={rectSortingStrategy}
             >
-              <span className="chip-dot" style={{ background: cat.color }} />
-              {editingCatId === cat.id ? (
-                <input
-                  ref={editInputRef}
-                  value={editingName}
-                  onChange={(e) => setEditingName(e.target.value)}
-                  onBlur={() => saveRename(cat)}
-                  onKeyDown={(e) => handleRenameKeyDown(e, cat)}
-                  onClick={(e) => e.stopPropagation()}
-                  className="chip-edit-input"
+              {categories.map((cat) => (
+                <SortableCatChip
+                  key={cat.id}
+                  cat={cat}
+                  isSelected={selectedCategory === cat.id}
+                  onSelect={() =>
+                    setSelectedCategory(
+                      selectedCategory === cat.id ? null : cat.id
+                    )
+                  }
+                  isEditing={editingCatId === cat.id}
+                  editInputRef={editInputRef}
+                  editingName={editingName}
+                  onEditingNameChange={setEditingName}
+                  onSaveRename={() => saveRename(cat)}
+                  onRenameKeyDown={(e) => handleRenameKeyDown(e, cat)}
+                  onStartRename={(e) => startRename(e, cat)}
+                  onDelete={(e) => handleDelete(e, cat)}
+                  canRename={!!onRenameCategory}
+                  canDelete={!!onDeleteCategory}
                 />
-              ) : (
-                <>
-                  <span className="chip-name">{cat.name}</span>
-                  <span className="chip-count">{cat.count || 0}</span>
-                </>
-              )}
-              {editingCatId !== cat.id && (
-                <span
-                  className="chip-actions"
-                  style={{
-                    opacity: hoveredCatId === cat.id ? 1 : 0,
-                    pointerEvents: hoveredCatId === cat.id ? "auto" : "none",
-                    transition: "opacity 0.12s",
-                  }}
-                >
-                  {onRenameCategory && (
-                    <button
-                      className="chip-action-btn"
-                      onClick={(e) => startRename(e, cat)}
-                      title="이름 변경"
-                    >
-                      <IconEdit />
-                    </button>
-                  )}
-                  {onDeleteCategory && (
-                    <button
-                      className="chip-action-btn del"
-                      onClick={(e) => handleDelete(e, cat)}
-                      title="삭제"
-                    >
-                      <IconTrash />
-                    </button>
-                  )}
-                </span>
-              )}
-            </div>
-          ))}
+              ))}
+            </SortableContext>
+          </DndContext>
 
           {isAddingCat ? (
             <div className="cat-chip adding">

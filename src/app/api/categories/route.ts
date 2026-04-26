@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCategories, getCategoriesByType, createCategory } from "@/lib/data";
+import { getCategories, getCategoriesByType, createCategory, reorderCategories } from "@/lib/data";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -16,6 +16,12 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+
+    if (body.action === "reorder") {
+      reorderCategories(body.orderedIds);
+      return NextResponse.json({ ok: true });
+    }
+
     const newCategory = createCategory({
       name: body.name,
       type: body.type,
