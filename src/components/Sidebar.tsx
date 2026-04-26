@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface UserInfo {
   id: string;
@@ -33,7 +33,13 @@ export default function Sidebar({
   user,
   onLogout,
 }: SidebarProps) {
+  const [isExpanded, setIsExpanded] = useState(true);
   const [showLogoutBtn, setShowLogoutBtn] = useState(false);
+
+  // Auto-expand when workspace changes
+  useEffect(() => {
+    setIsExpanded(true);
+  }, [workspace]);
 
   const today = new Date();
   const dateStr = today.toLocaleDateString("ko-KR", {
@@ -45,11 +51,59 @@ export default function Sidebar({
 
   const getInitials = (name: string) => name.slice(0, 2).toUpperCase();
 
+  const totalCount = workspace === "work" ? workCount : personalCount;
+
   const subItems: { mode: "all" | "pinned" | "recent"; label: string; count: number; icon: React.ReactNode }[] = [
-    { mode: "all", label: "전체", count: workspace === "work" ? workCount : personalCount, icon: <IconGrid /> },
+    { mode: "all",    label: "전체",     count: totalCount,  icon: <IconGrid /> },
     { mode: "pinned", label: "즐겨찾기", count: pinnedCount, icon: <IconStar /> },
     { mode: "recent", label: "최근 방문", count: recentCount, icon: <IconClock /> },
   ];
+
+  const renderWorkspaceItem = (ws: "work" | "personal", count: number) => {
+    const isActive = workspace === ws;
+    return (
+      <div key={ws}>
+        <div className="nav-ws-row">
+          <button
+            className={`nav-item ws-parent ${isActive ? "active" : ""}`}
+            onClick={() => {
+              setWorkspace(ws);
+              setViewMode("all");
+            }}
+          >
+            <span className={`ws-dot ${ws}`} />
+            <span>{ws === "work" ? "업무" : "개인"}</span>
+            <span className="nav-count">{count}</span>
+          </button>
+          {isActive && (
+            <button
+              className="nav-ws-chevron"
+              onClick={() => setIsExpanded((v) => !v)}
+              title={isExpanded ? "접기" : "펼치기"}
+            >
+              <IconChevron expanded={isExpanded} />
+            </button>
+          )}
+        </div>
+
+        {isActive && isExpanded && (
+          <div className="nav-sub">
+            {subItems.map(({ mode, label, count: cnt, icon }) => (
+              <button
+                key={mode}
+                className={`nav-sub-item ${viewMode === mode ? "active" : ""}`}
+                onClick={() => setViewMode(mode)}
+              >
+                {icon}
+                <span>{label}</span>
+                <span className="nav-count">{cnt}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <aside className="sidebar">
@@ -73,56 +127,8 @@ export default function Sidebar({
       <nav className="nav">
         <div className="nav-section">
           <div className="nav-label">워크스페이스</div>
-
-          {/* Work */}
-          <button
-            className={`nav-item ${workspace === "work" ? "active" : ""}`}
-            onClick={() => { setWorkspace("work"); setViewMode("all"); }}
-          >
-            <span className="ws-dot work" />
-            <span>업무</span>
-            <span className="nav-count">{workCount}</span>
-          </button>
-          {workspace === "work" && (
-            <div className="nav-sub">
-              {subItems.map(({ mode, label, count, icon }) => (
-                <button
-                  key={mode}
-                  className={`nav-sub-item ${viewMode === mode ? "active" : ""}`}
-                  onClick={() => setViewMode(mode)}
-                >
-                  {icon}
-                  <span>{label}</span>
-                  <span className="nav-count">{count}</span>
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Personal */}
-          <button
-            className={`nav-item ${workspace === "personal" ? "active" : ""}`}
-            onClick={() => { setWorkspace("personal"); setViewMode("all"); }}
-          >
-            <span className="ws-dot personal" />
-            <span>개인</span>
-            <span className="nav-count">{personalCount}</span>
-          </button>
-          {workspace === "personal" && (
-            <div className="nav-sub">
-              {subItems.map(({ mode, label, count, icon }) => (
-                <button
-                  key={mode}
-                  className={`nav-sub-item ${viewMode === mode ? "active" : ""}`}
-                  onClick={() => setViewMode(mode)}
-                >
-                  {icon}
-                  <span>{label}</span>
-                  <span className="nav-count">{count}</span>
-                </button>
-              ))}
-            </div>
-          )}
+          {renderWorkspaceItem("work", workCount)}
+          {renderWorkspaceItem("personal", personalCount)}
         </div>
       </nav>
 
@@ -156,6 +162,29 @@ export default function Sidebar({
         )}
       </div>
     </aside>
+  );
+}
+
+function IconChevron({ expanded }: { expanded: boolean }) {
+  return (
+    <svg
+      width="10"
+      height="10"
+      viewBox="0 0 10 10"
+      fill="none"
+      style={{
+        transform: expanded ? "rotate(0deg)" : "rotate(-90deg)",
+        transition: "transform 0.18s ease",
+      }}
+    >
+      <path
+        d="M2 3.5l3 3 3-3"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }
 
